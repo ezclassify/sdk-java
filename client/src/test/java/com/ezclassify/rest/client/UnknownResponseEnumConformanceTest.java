@@ -109,7 +109,7 @@ class UnknownResponseEnumConformanceTest {
         CTX + "/scheme/scan",
         envelope(
             RESOLUTION,
-            "{\"results\":[],\"limits\":{\"status\":\"paused\",\"limitHit\":\"memory\","
+            "{\"results\":[],\"unread\":[],\"limits\":{\"status\":\"paused\",\"limitHit\":\"memory\","
                 + "\"regionsFound\":0}}"));
     routes.put(
         CTX + "/crosswalk/translate",
@@ -306,7 +306,9 @@ class UnknownResponseEnumConformanceTest {
                 + ",\"assertions\":["
                 + assertion
                 + "],\"errors\":[],\"warnings\":[]}"));
-    routes.put(CTX + "/access/check", envelope(RESOLUTION, "{\"granted\":true,\"rules\":[]}"));
+    routes.put(
+        CTX + "/access/check",
+        envelope(RESOLUTION, "{\"granted\":true,\"rules\":[],\"warnings\":[]}"));
     try (ClientStubServer local = new ClientStubServer(routes, "1.0.0")) {
       EzClassifyContext ctx = EzClassifyClient.connect(local.url(), "acme-ctx", "1.0.0");
       List<Assertion> data = ctx.scheme().process("H").result().assertions();

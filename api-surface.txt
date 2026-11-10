@@ -54,8 +54,6 @@ public final class com.ezclassify.rest.client.ContextCrosswalk {
   public com.ezclassify.rest.contract.ContextCrosswalkTranslationResult translate(java.lang.String, java.util.List<com.ezclassify.rest.contract.Assertion>);
 }
 public final class com.ezclassify.rest.client.ContextDocument {
-  public com.ezclassify.rest.contract.ContextDocumentAccessAssessmentResult assessAccess(java.lang.String, java.util.Map<java.lang.String, java.lang.Object>);
-  public com.ezclassify.rest.contract.ContextDocumentAccessAssessmentResult assessAccess(java.lang.String, java.util.Map<java.lang.String, java.lang.Object>, java.util.Map<java.lang.String, java.lang.Object>, com.ezclassify.rest.contract.GuideDeterminationInput, com.ezclassify.rest.contract.DocumentResponseProfile);
   public com.ezclassify.rest.contract.ContextDocumentAuditResult audit(java.lang.String);
   public com.ezclassify.rest.contract.ContextDocumentAuditResult audit(java.lang.String, com.ezclassify.rest.contract.GuideDeterminationInput, com.ezclassify.rest.contract.DocumentResponseProfile);
 }
@@ -379,15 +377,17 @@ public final class com.ezclassify.rest.contract.AccessComparisonResult extends j
 }
 public final class com.ezclassify.rest.contract.AccessDecision extends java.lang.Record {
   public boolean granted();
-  public com.ezclassify.rest.contract.AccessDecision(boolean, com.ezclassify.rest.contract.SourceReference, java.util.List<com.ezclassify.rest.contract.AccessRuleResult>);
+  public com.ezclassify.rest.contract.AccessDecision(boolean, com.ezclassify.rest.contract.SourceReference, java.util.List<com.ezclassify.rest.contract.AccessRuleResult>, java.util.List<com.ezclassify.rest.contract.Warning>);
   public com.ezclassify.rest.contract.SourceReference provenance();
   public final boolean equals(java.lang.Object);
   public final int hashCode();
   public final java.lang.String toString();
   public java.util.List<com.ezclassify.rest.contract.AccessRuleResult> rules();
+  public java.util.List<com.ezclassify.rest.contract.Warning> warnings();
   public static final java.lang.String JSON_FIELD_GRANTED = "granted";
   public static final java.lang.String JSON_FIELD_PROVENANCE = "provenance";
   public static final java.lang.String JSON_FIELD_RULES = "rules";
+  public static final java.lang.String JSON_FIELD_WARNINGS = "warnings";
 }
 public final class com.ezclassify.rest.contract.AccessOperand extends java.lang.Record {
   public com.ezclassify.rest.contract.AccessOperand(com.ezclassify.rest.contract.AccessOperandSource, java.lang.String, java.lang.String, java.util.List<com.ezclassify.rest.contract.AssertionReference>, java.lang.Object);
@@ -532,60 +532,6 @@ public final class com.ezclassify.rest.contract.AccessRuleResult extends java.la
   public static final java.lang.String JSON_FIELD_RULE = "rule";
   public static final java.lang.String JSON_FIELD_RULE_INDEX = "ruleIndex";
   public static final java.lang.String JSON_FIELD_SKIPPED = "skipped";
-}
-public final class com.ezclassify.rest.contract.AccessScenarioAssessment extends java.lang.Record {
-  public boolean advisory();
-  public com.ezclassify.rest.contract.AccessDecision decision();
-  public com.ezclassify.rest.contract.AccessScenarioAssessment(com.ezclassify.rest.contract.AccessScenarioBasis, boolean, com.ezclassify.rest.contract.AccessScenarioStatus, com.ezclassify.rest.contract.EffectiveDocumentTarget, com.ezclassify.rest.contract.AccessDecision, java.util.List<com.ezclassify.rest.contract.ContentChangeRequirement>, java.util.List<com.ezclassify.rest.contract.SubjectContextRequirement>, java.util.List<com.ezclassify.rest.contract.AssessmentLimitation>);
-  public com.ezclassify.rest.contract.AccessScenarioBasis basis();
-  public com.ezclassify.rest.contract.AccessScenarioStatus status();
-  public com.ezclassify.rest.contract.EffectiveDocumentTarget target();
-  public final boolean equals(java.lang.Object);
-  public final int hashCode();
-  public final java.lang.String toString();
-  public java.util.List<com.ezclassify.rest.contract.AssessmentLimitation> limitations();
-  public java.util.List<com.ezclassify.rest.contract.ContentChangeRequirement> contentRequirements();
-  public java.util.List<com.ezclassify.rest.contract.SubjectContextRequirement> contextRequirements();
-  public static final java.lang.String JSON_FIELD_ADVISORY = "advisory";
-  public static final java.lang.String JSON_FIELD_BASIS = "basis";
-  public static final java.lang.String JSON_FIELD_CONTENT_REQUIREMENTS = "contentRequirements";
-  public static final java.lang.String JSON_FIELD_CONTEXT_REQUIREMENTS = "contextRequirements";
-  public static final java.lang.String JSON_FIELD_DECISION = "decision";
-  public static final java.lang.String JSON_FIELD_LIMITATIONS = "limitations";
-  public static final java.lang.String JSON_FIELD_STATUS = "status";
-  public static final java.lang.String JSON_FIELD_TARGET = "target";
-}
-public final class com.ezclassify.rest.contract.AccessScenarioBasis extends com.ezclassify.rest.contract.ExpandableStringEnum<com.ezclassify.rest.contract.AccessScenarioBasis$Value> {
-  public static com.ezclassify.rest.contract.AccessScenarioBasis fromString(java.lang.String);
-  public static com.ezclassify.rest.contract.AccessScenarioBasis fromWire(java.lang.String);
-  public static final com.ezclassify.rest.contract.AccessScenarioBasis AUTHORED;
-  public static final com.ezclassify.rest.contract.AccessScenarioBasis AUTHORITATIVE;
-  public static final com.ezclassify.rest.contract.AccessScenarioBasis PROJECTED;
-  public static java.util.List<com.ezclassify.rest.contract.AccessScenarioBasis> values();
-}
-public final class com.ezclassify.rest.contract.AccessScenarioBasis$Value extends java.lang.Enum<com.ezclassify.rest.contract.AccessScenarioBasis$Value> {
-  public static com.ezclassify.rest.contract.AccessScenarioBasis$Value valueOf(java.lang.String);
-  public static com.ezclassify.rest.contract.AccessScenarioBasis$Value[] values();
-  public static final com.ezclassify.rest.contract.AccessScenarioBasis$Value AUTHORED;
-  public static final com.ezclassify.rest.contract.AccessScenarioBasis$Value AUTHORITATIVE;
-  public static final com.ezclassify.rest.contract.AccessScenarioBasis$Value PROJECTED;
-  public static final com.ezclassify.rest.contract.AccessScenarioBasis$Value UNKNOWN;
-}
-public final class com.ezclassify.rest.contract.AccessScenarioStatus extends com.ezclassify.rest.contract.ExpandableStringEnum<com.ezclassify.rest.contract.AccessScenarioStatus$Value> {
-  public static com.ezclassify.rest.contract.AccessScenarioStatus fromString(java.lang.String);
-  public static com.ezclassify.rest.contract.AccessScenarioStatus fromWire(java.lang.String);
-  public static final com.ezclassify.rest.contract.AccessScenarioStatus DENIED;
-  public static final com.ezclassify.rest.contract.AccessScenarioStatus GRANTED;
-  public static final com.ezclassify.rest.contract.AccessScenarioStatus NOT_EVALUATED;
-  public static java.util.List<com.ezclassify.rest.contract.AccessScenarioStatus> values();
-}
-public final class com.ezclassify.rest.contract.AccessScenarioStatus$Value extends java.lang.Enum<com.ezclassify.rest.contract.AccessScenarioStatus$Value> {
-  public static com.ezclassify.rest.contract.AccessScenarioStatus$Value valueOf(java.lang.String);
-  public static com.ezclassify.rest.contract.AccessScenarioStatus$Value[] values();
-  public static final com.ezclassify.rest.contract.AccessScenarioStatus$Value DENIED;
-  public static final com.ezclassify.rest.contract.AccessScenarioStatus$Value GRANTED;
-  public static final com.ezclassify.rest.contract.AccessScenarioStatus$Value NOT_EVALUATED;
-  public static final com.ezclassify.rest.contract.AccessScenarioStatus$Value UNKNOWN;
 }
 public final class com.ezclassify.rest.contract.AggregateResult extends java.lang.Record {
   public boolean valid();
@@ -1119,22 +1065,6 @@ public final class com.ezclassify.rest.contract.ConceptView$TextInput extends ja
   public java.lang.String label();
   public java.lang.String placeholder();
 }
-public final class com.ezclassify.rest.contract.ContentChangeRequirement extends java.lang.Record {
-  public com.ezclassify.rest.contract.AssertionReference assertion();
-  public com.ezclassify.rest.contract.ContentChangeRequirement(com.ezclassify.rest.contract.RuleReference, com.ezclassify.rest.contract.AssertionReference, java.util.List<java.lang.String>, java.lang.String, java.lang.Object);
-  public com.ezclassify.rest.contract.RuleReference rule();
-  public final boolean equals(java.lang.Object);
-  public final int hashCode();
-  public final java.lang.String toString();
-  public java.lang.Object verificationRequired();
-  public java.lang.String instruction();
-  public java.util.List<java.lang.String> supportIds();
-  public static final java.lang.String JSON_FIELD_ASSERTION = "assertion";
-  public static final java.lang.String JSON_FIELD_INSTRUCTION = "instruction";
-  public static final java.lang.String JSON_FIELD_RULE = "rule";
-  public static final java.lang.String JSON_FIELD_SUPPORT_IDS = "supportIds";
-  public static final java.lang.String JSON_FIELD_VERIFICATION_REQUIRED = "verificationRequired";
-}
 public final class com.ezclassify.rest.contract.ContentEvidenceSpan extends java.lang.Record {
   public com.ezclassify.rest.contract.ContentEvidenceSpan(int, int, java.lang.String, com.ezclassify.rest.contract.RuleReference, java.lang.String);
   public com.ezclassify.rest.contract.RuleReference rule();
@@ -1197,20 +1127,6 @@ public final class com.ezclassify.rest.contract.ContextCrosswalkTranslationResul
   public com.ezclassify.rest.contract.ContextCrosswalkTranslationResult(com.ezclassify.rest.contract.ContextResolution, com.ezclassify.rest.contract.CrosswalkTranslationResult, java.util.List<com.ezclassify.rest.contract.AssessmentLimitation>, com.ezclassify.rest.contract.DocumentResponseProjection);
   public com.ezclassify.rest.contract.ContextResolution resolution();
   public com.ezclassify.rest.contract.CrosswalkTranslationResult result();
-  public com.ezclassify.rest.contract.DocumentResponseProjection responseProjection();
-  public final boolean equals(java.lang.Object);
-  public final int hashCode();
-  public final java.lang.String toString();
-  public java.util.List<com.ezclassify.rest.contract.AssessmentLimitation> operationLimitations();
-  public static final java.lang.String JSON_FIELD_OPERATION_LIMITATIONS = "operationLimitations";
-  public static final java.lang.String JSON_FIELD_RESOLUTION = "resolution";
-  public static final java.lang.String JSON_FIELD_RESPONSE_PROJECTION = "responseProjection";
-  public static final java.lang.String JSON_FIELD_RESULT = "result";
-}
-public final class com.ezclassify.rest.contract.ContextDocumentAccessAssessmentResult extends java.lang.Record {
-  public com.ezclassify.rest.contract.ContextDocumentAccessAssessmentResult(com.ezclassify.rest.contract.ContextResolution, com.ezclassify.rest.contract.DocumentAccessAssessment, java.util.List<com.ezclassify.rest.contract.AssessmentLimitation>, com.ezclassify.rest.contract.DocumentResponseProjection);
-  public com.ezclassify.rest.contract.ContextResolution resolution();
-  public com.ezclassify.rest.contract.DocumentAccessAssessment result();
   public com.ezclassify.rest.contract.DocumentResponseProjection responseProjection();
   public final boolean equals(java.lang.Object);
   public final int hashCode();
@@ -1867,22 +1783,6 @@ public final class com.ezclassify.rest.contract.CtxDescribeResponseBody extends 
   public static final java.lang.String JSON_FIELD_SCHEMES = "schemes";
   public static final java.lang.String JSON_FIELD_VERSION = "version";
 }
-public final class com.ezclassify.rest.contract.CtxDocumentAssessAccessRequestBody extends java.lang.Record {
-  public com.ezclassify.rest.contract.CtxDocumentAssessAccessRequestBody(java.lang.String, java.util.Map<java.lang.String, java.lang.Object>, java.util.Map<java.lang.String, java.lang.Object>, com.ezclassify.rest.contract.GuideDeterminationInput, com.ezclassify.rest.contract.DocumentResponseProfile);
-  public com.ezclassify.rest.contract.DocumentResponseProfile responseProfile();
-  public com.ezclassify.rest.contract.GuideDeterminationInput guideDeterminations();
-  public final boolean equals(java.lang.Object);
-  public final int hashCode();
-  public final java.lang.String toString();
-  public java.lang.String text();
-  public java.util.Map<java.lang.String, java.lang.Object> context();
-  public java.util.Map<java.lang.String, java.lang.Object> userAttributes();
-  public static final java.lang.String JSON_FIELD_CONTEXT = "context";
-  public static final java.lang.String JSON_FIELD_GUIDE_DETERMINATIONS = "guideDeterminations";
-  public static final java.lang.String JSON_FIELD_RESPONSE_PROFILE = "responseProfile";
-  public static final java.lang.String JSON_FIELD_TEXT = "text";
-  public static final java.lang.String JSON_FIELD_USER_ATTRIBUTES = "userAttributes";
-}
 public final class com.ezclassify.rest.contract.CtxDocumentAuditRequestBody extends java.lang.Record {
   public com.ezclassify.rest.contract.CtxDocumentAuditRequestBody(java.lang.String, com.ezclassify.rest.contract.GuideDeterminationInput, com.ezclassify.rest.contract.DocumentResponseProfile);
   public com.ezclassify.rest.contract.DocumentResponseProfile responseProfile();
@@ -1922,20 +1822,6 @@ public final class com.ezclassify.rest.contract.DiffResult extends java.lang.Rec
   public static final java.lang.String JSON_FIELD_ADDED = "added";
   public static final java.lang.String JSON_FIELD_COMMON = "common";
   public static final java.lang.String JSON_FIELD_REMOVED = "removed";
-}
-public final class com.ezclassify.rest.contract.DocumentAccessAssessment extends java.lang.Record {
-  public com.ezclassify.rest.contract.AccessScenarioAssessment authored();
-  public com.ezclassify.rest.contract.AccessScenarioAssessment authoritative();
-  public com.ezclassify.rest.contract.AccessScenarioAssessment projected();
-  public com.ezclassify.rest.contract.DocumentAccessAssessment(com.ezclassify.rest.contract.DocumentAuditReport, com.ezclassify.rest.contract.AccessScenarioAssessment, com.ezclassify.rest.contract.AccessScenarioAssessment, com.ezclassify.rest.contract.AccessScenarioAssessment);
-  public com.ezclassify.rest.contract.DocumentAuditReport audit();
-  public final boolean equals(java.lang.Object);
-  public final int hashCode();
-  public final java.lang.String toString();
-  public static final java.lang.String JSON_FIELD_AUDIT = "audit";
-  public static final java.lang.String JSON_FIELD_AUTHORED = "authored";
-  public static final java.lang.String JSON_FIELD_AUTHORITATIVE = "authoritative";
-  public static final java.lang.String JSON_FIELD_PROJECTED = "projected";
 }
 public final class com.ezclassify.rest.contract.DocumentAuditReport extends java.lang.Record {
   public com.ezclassify.rest.contract.CheckCoverageResult wholeCoversParts();
@@ -2132,26 +2018,6 @@ public final class com.ezclassify.rest.contract.EachAffix extends java.lang.Reco
   public java.lang.String suffix();
   public static final java.lang.String JSON_FIELD_PREFIX = "prefix";
   public static final java.lang.String JSON_FIELD_SUFFIX = "suffix";
-}
-public final class com.ezclassify.rest.contract.EffectiveDocumentTarget extends java.lang.Record {
-  public com.ezclassify.rest.contract.AccessScenarioBasis basis();
-  public com.ezclassify.rest.contract.EffectiveDocumentTarget(com.ezclassify.rest.contract.AccessScenarioBasis, java.lang.String, java.util.List<com.ezclassify.rest.contract.Assertion>, java.lang.String, java.util.List<java.lang.String>, java.lang.String, java.lang.String);
-  public final boolean equals(java.lang.Object);
-  public final int hashCode();
-  public final java.lang.String toString();
-  public java.lang.String authoredWhole();
-  public java.lang.String determinedGuideRequiredWhole();
-  public java.lang.String marking();
-  public java.lang.String projectedGuideRequiredWhole();
-  public java.util.List<com.ezclassify.rest.contract.Assertion> assertions();
-  public java.util.List<java.lang.String> authoredParts();
-  public static final java.lang.String JSON_FIELD_ASSERTIONS = "assertions";
-  public static final java.lang.String JSON_FIELD_AUTHORED_PARTS = "authoredParts";
-  public static final java.lang.String JSON_FIELD_AUTHORED_WHOLE = "authoredWhole";
-  public static final java.lang.String JSON_FIELD_BASIS = "basis";
-  public static final java.lang.String JSON_FIELD_DETERMINED_GUIDE_REQUIRED_WHOLE = "determinedGuideRequiredWhole";
-  public static final java.lang.String JSON_FIELD_MARKING = "marking";
-  public static final java.lang.String JSON_FIELD_PROJECTED_GUIDE_REQUIRED_WHOLE = "projectedGuideRequiredWhole";
 }
 public final class com.ezclassify.rest.contract.EmbeddedMarkingStyle extends java.lang.Record {
   public com.ezclassify.rest.contract.EmbeddedMarkingStyle(java.lang.String, java.lang.String, com.ezclassify.rest.contract.EmbeddedMarkingStyleAutoInsert);
@@ -3342,8 +3208,6 @@ public final class com.ezclassify.rest.contract.ReproducibleSourceReference exte
 public final class com.ezclassify.rest.contract.Rollup extends com.ezclassify.rest.contract.ExpandableStringEnum<com.ezclassify.rest.contract.Rollup$Value> {
   public static com.ezclassify.rest.contract.Rollup fromString(java.lang.String);
   public static com.ezclassify.rest.contract.Rollup fromWire(java.lang.String);
-  public static final com.ezclassify.rest.contract.Rollup COMPLEMENT;
-  public static final com.ezclassify.rest.contract.Rollup EXCLUSIVE_OR;
   public static final com.ezclassify.rest.contract.Rollup FIRST;
   public static final com.ezclassify.rest.contract.Rollup INTERSECTION;
   public static final com.ezclassify.rest.contract.Rollup LAST;
@@ -3351,15 +3215,12 @@ public final class com.ezclassify.rest.contract.Rollup extends com.ezclassify.re
   public static final com.ezclassify.rest.contract.Rollup MAX;
   public static final com.ezclassify.rest.contract.Rollup MIN;
   public static final com.ezclassify.rest.contract.Rollup PIPELINE;
-  public static final com.ezclassify.rest.contract.Rollup SYMMETRIC_DIFFERENCE;
   public static final com.ezclassify.rest.contract.Rollup UNION;
   public static java.util.List<com.ezclassify.rest.contract.Rollup> values();
 }
 public final class com.ezclassify.rest.contract.Rollup$Value extends java.lang.Enum<com.ezclassify.rest.contract.Rollup$Value> {
   public static com.ezclassify.rest.contract.Rollup$Value valueOf(java.lang.String);
   public static com.ezclassify.rest.contract.Rollup$Value[] values();
-  public static final com.ezclassify.rest.contract.Rollup$Value COMPLEMENT;
-  public static final com.ezclassify.rest.contract.Rollup$Value EXCLUSIVE_OR;
   public static final com.ezclassify.rest.contract.Rollup$Value FIRST;
   public static final com.ezclassify.rest.contract.Rollup$Value INTERSECTION;
   public static final com.ezclassify.rest.contract.Rollup$Value LAST;
@@ -3367,7 +3228,6 @@ public final class com.ezclassify.rest.contract.Rollup$Value extends java.lang.E
   public static final com.ezclassify.rest.contract.Rollup$Value MAX;
   public static final com.ezclassify.rest.contract.Rollup$Value MIN;
   public static final com.ezclassify.rest.contract.Rollup$Value PIPELINE;
-  public static final com.ezclassify.rest.contract.Rollup$Value SYMMETRIC_DIFFERENCE;
   public static final com.ezclassify.rest.contract.Rollup$Value UNION;
   public static final com.ezclassify.rest.contract.Rollup$Value UNKNOWN;
 }
@@ -3507,13 +3367,15 @@ public final class com.ezclassify.rest.contract.ScanLimits extends java.lang.Rec
 }
 public final class com.ezclassify.rest.contract.ScanResponseBody extends java.lang.Record {
   public com.ezclassify.rest.contract.ScanLimits limits();
-  public com.ezclassify.rest.contract.ScanResponseBody(java.util.List<com.ezclassify.rest.contract.ScanResult>, com.ezclassify.rest.contract.ScanLimits);
+  public com.ezclassify.rest.contract.ScanResponseBody(java.util.List<com.ezclassify.rest.contract.ScanResult>, java.util.List<com.ezclassify.rest.contract.UnreadMark>, com.ezclassify.rest.contract.ScanLimits);
   public final boolean equals(java.lang.Object);
   public final int hashCode();
   public final java.lang.String toString();
   public java.util.List<com.ezclassify.rest.contract.ScanResult> results();
+  public java.util.List<com.ezclassify.rest.contract.UnreadMark> unread();
   public static final java.lang.String JSON_FIELD_LIMITS = "limits";
   public static final java.lang.String JSON_FIELD_RESULTS = "results";
+  public static final java.lang.String JSON_FIELD_UNREAD = "unread";
 }
 public final class com.ezclassify.rest.contract.ScanResult extends java.lang.Record {
   public boolean wrapped();
@@ -3666,24 +3528,6 @@ public final class com.ezclassify.rest.contract.SourceReference extends java.lan
   public static final java.lang.String JSON_FIELD_REPRODUCIBILITY = "reproducibility";
   public static final java.lang.String JSON_FIELD_SNAPSHOT_ID = "snapshotId";
 }
-public final class com.ezclassify.rest.contract.SubjectContextRequirement extends java.lang.Record {
-  public com.ezclassify.rest.contract.RuleReference rule();
-  public com.ezclassify.rest.contract.SubjectContextRequirement(com.ezclassify.rest.contract.RuleReference, java.lang.String, java.lang.String, java.lang.String, java.util.List<java.lang.Object>, java.lang.String);
-  public final boolean equals(java.lang.Object);
-  public final int hashCode();
-  public final java.lang.String toString();
-  public java.lang.String contextPath();
-  public java.lang.String instruction();
-  public java.lang.String operator();
-  public java.lang.String subjectPath();
-  public java.util.List<java.lang.Object> acceptableValues();
-  public static final java.lang.String JSON_FIELD_ACCEPTABLE_VALUES = "acceptableValues";
-  public static final java.lang.String JSON_FIELD_CONTEXT_PATH = "contextPath";
-  public static final java.lang.String JSON_FIELD_INSTRUCTION = "instruction";
-  public static final java.lang.String JSON_FIELD_OPERATOR = "operator";
-  public static final java.lang.String JSON_FIELD_RULE = "rule";
-  public static final java.lang.String JSON_FIELD_SUBJECT_PATH = "subjectPath";
-}
 public final class com.ezclassify.rest.contract.SuggestResult extends java.lang.Record {
   public com.ezclassify.rest.contract.SuggestResult(java.util.List<com.ezclassify.rest.contract.Suggestion>, java.util.List<com.ezclassify.rest.contract.Warning>);
   public final boolean equals(java.lang.Object);
@@ -3833,6 +3677,22 @@ public final class com.ezclassify.rest.contract.TraceValidationIssue extends jav
   public java.lang.String message();
   public static final java.lang.String JSON_FIELD_CONSTRAINT_ID = "constraintId";
   public static final java.lang.String JSON_FIELD_MESSAGE = "message";
+}
+public final class com.ezclassify.rest.contract.UnreadMark extends java.lang.Record {
+  public boolean leading();
+  public com.ezclassify.rest.contract.UnreadMark(int, java.lang.String, boolean, int, java.lang.String);
+  public final boolean equals(java.lang.Object);
+  public final int hashCode();
+  public final java.lang.String toString();
+  public int end();
+  public int start();
+  public java.lang.String inner();
+  public java.lang.String text();
+  public static final java.lang.String JSON_FIELD_END = "end";
+  public static final java.lang.String JSON_FIELD_INNER = "inner";
+  public static final java.lang.String JSON_FIELD_LEADING = "leading";
+  public static final java.lang.String JSON_FIELD_START = "start";
+  public static final java.lang.String JSON_FIELD_TEXT = "text";
 }
 public final class com.ezclassify.rest.contract.UnrepresentableFact extends java.lang.Record {
   public com.ezclassify.rest.contract.UnrepresentableFact(java.lang.String, com.ezclassify.rest.contract.UnrepresentableFactReason, java.lang.String);

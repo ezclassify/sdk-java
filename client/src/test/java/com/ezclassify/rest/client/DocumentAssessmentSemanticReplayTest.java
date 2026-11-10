@@ -68,17 +68,25 @@ class DocumentAssessmentSemanticReplayTest {
   }
 
   /**
-   * The corpus is the count. Every contract case is numbered in order from 1 and has exactly one
-   * request and one recording, and nothing in either file lacks a case, so a dropped or added case
-   * shows up here without a pinned total to move.
+   * The corpus is the count. Every contract case has exactly one request and one recording, and
+   * nothing in either file lacks a case, so a dropped or added case shows up here without a pinned
+   * total to move. Case numbers are stable identities: a retired case leaves a gap, the numbers
+   * still ascend, and each request id is the number's own.
    */
   private static void assertCorpusIsComplete(
       JsonArray cases, JsonObject requests, JsonObject recordings) {
     assertTrue(!cases.isEmpty(), "the semantic contract declares no cases");
     List<String> requestIds = new ArrayList<>();
+    int previous = 0;
     for (int i = 0; i < cases.size(); i++) {
       JsonObject testCase = cases.get(i).getAsJsonObject();
-      assertEquals(i + 1, testCase.get("number").getAsInt(), "semantic case numbering has a gap");
+      int number = testCase.get("number").getAsInt();
+      assertTrue(number > previous, "semantic case numbers must ascend");
+      assertEquals(
+          String.format("case-%02d", number),
+          string(testCase, "requestId"),
+          "a semantic request id names its case number");
+      previous = number;
       requestIds.add(string(testCase, "requestId"));
     }
     List<String> sortedIds = new ArrayList<>(requestIds);

@@ -31,7 +31,7 @@ class ContextCacheTest {
   private static final String PROCESS_ENVELOPE =
       "{" + RESOLUTION + ",\"result\":{" + SETTLED_H + ",\"proposedFixes\":[],\"renders\":{}}}";
   private static final String DECISION =
-      "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],\"result\":{\"granted\":true,\"rules\":[]}}";
+      "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],\"result\":{\"granted\":true,\"rules\":[],\"warnings\":[]}}";
   private static final String TRACE_ENVELOPE =
       "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],\"result\":{\"input\":\"H\",\"schemeId\":\"s\",\"entries\":[],\"repairs\":[],\"validationErrors\":[],\"inferences\":[],\"finalAssertions\":[],\"rendered\":\"H\"}}";
   private static final String SUGGESTIONS_ENVELOPE =

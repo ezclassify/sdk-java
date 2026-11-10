@@ -79,8 +79,8 @@ public final class ContextAccess {
   /**
    * Checks immutable subject attributes, supplied as a map, against structured target assertions.
    *
-   * <p>A host holding subject attributes as a map can supply them directly without serializing
-   * them to JSON first.
+   * <p>A host holding subject attributes as a map can supply them directly without serializing them
+   * to JSON first.
    *
    * @param dataAssertions assertions describing the trusted target
    * @param userAttributes subject attributes
