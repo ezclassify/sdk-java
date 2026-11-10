@@ -243,8 +243,7 @@ public final class EzClassifyContext {
    * call and is never answered by the primary scheme instead. Views are held per selector, and each
    * view's answers are cached apart from every other view's.
    *
-   * @param selector the Context-local scheme key
-   *     the Context holds
+   * @param selector the Context-local scheme key the Context holds
    * @return the view of that scheme, the same instance on every call with the same selector
    * @throws IllegalArgumentException if {@code selector} is null or blank
    */
