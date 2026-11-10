@@ -40,7 +40,7 @@ class ContextSchemeResourceTest {
   private static final String SUMMARY =
       "{\"id\":\"district\",\"version\":\"1.0.0\",\"name\":\"District\",\"description\":\"A district scheme.\","
           + "\"defaultScope\":\"banner\",\"scopeLabel\":\"Scope\",\"defaultRenderFormat\":\"long\","
-          + "\"roleAware\":true,"
+          + "\"roleAware\":true,\"marking\":\"HIGH\","
           + "\"vocabulary\":{\"whole\":{\"singular\":\"banner\",\"plural\":\"banners\"}},"
           + "\"referenceSurfaceLabel\":{\"singular\":\"Handbook\",\"plural\":\"Handbooks\"},"
           + "\"contextFormats\":{\"whole\":[\"long\"],\"part\":[\"short\"]}}";
@@ -227,6 +227,7 @@ class ContextSchemeResourceTest {
       assertEquals("banner", summary.defaultScope());
       assertEquals("long", summary.defaultRenderFormat());
       assertEquals(Boolean.TRUE, summary.roleAware());
+      assertEquals("HIGH", summary.marking());
       assertEquals("banners", summary.vocabulary().get("whole").plural());
       assertEquals("Handbooks", summary.referenceSurfaceLabel().plural());
       assertEquals(List.of("short"), summary.contextFormats().part());

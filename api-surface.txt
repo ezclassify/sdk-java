@@ -3438,7 +3438,7 @@ public final class com.ezclassify.rest.contract.SchemeScope extends java.lang.Re
 public final class com.ezclassify.rest.contract.SchemeSummary extends java.lang.Record {
   public com.ezclassify.rest.contract.ReferenceSurfaceLabel referenceSurfaceLabel();
   public com.ezclassify.rest.contract.SchemeSummary$ContextFormats contextFormats();
-  public com.ezclassify.rest.contract.SchemeSummary(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.util.List<com.ezclassify.rest.contract.MarkingColorRule>, java.lang.Boolean, java.util.Map<java.lang.String, com.ezclassify.rest.contract.Term>, com.ezclassify.rest.contract.ReferenceSurfaceLabel, com.ezclassify.rest.contract.SchemeSummary$ContextFormats, java.util.List<com.ezclassify.rest.contract.EmbeddedMarkingStyle>, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+  public com.ezclassify.rest.contract.SchemeSummary(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.util.List<com.ezclassify.rest.contract.MarkingColorRule>, java.lang.Boolean, java.util.Map<java.lang.String, com.ezclassify.rest.contract.Term>, com.ezclassify.rest.contract.ReferenceSurfaceLabel, com.ezclassify.rest.contract.SchemeSummary$ContextFormats, java.util.List<com.ezclassify.rest.contract.EmbeddedMarkingStyle>, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
   public final boolean equals(java.lang.Object);
   public final int hashCode();
   public final java.lang.String toString();
@@ -3452,6 +3452,7 @@ public final class com.ezclassify.rest.contract.SchemeSummary extends java.lang.
   public java.lang.String description();
   public java.lang.String guidance();
   public java.lang.String id();
+  public java.lang.String marking();
   public java.lang.String name();
   public java.lang.String scopeLabel();
   public java.lang.String version();
@@ -3470,6 +3471,7 @@ public final class com.ezclassify.rest.contract.SchemeSummary extends java.lang.
   public static final java.lang.String JSON_FIELD_EMBEDDED_MARKING = "embeddedMarking";
   public static final java.lang.String JSON_FIELD_GUIDANCE = "guidance";
   public static final java.lang.String JSON_FIELD_ID = "id";
+  public static final java.lang.String JSON_FIELD_MARKING = "marking";
   public static final java.lang.String JSON_FIELD_NAME = "name";
   public static final java.lang.String JSON_FIELD_REFERENCE_SURFACE_LABEL = "referenceSurfaceLabel";
   public static final java.lang.String JSON_FIELD_ROLE_AWARE = "roleAware";
