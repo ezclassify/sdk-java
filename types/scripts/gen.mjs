@@ -917,8 +917,10 @@ generated++;
 const OPENAPI_PUBLIC_ROOTS = [
   ...namedContextEnvelopes,
   'CtxAccessDescribeRequirementsRequestBody',
+  'CtxCrosswalkDescribeResponseBody',
   'CtxDescribeResponseBody',
   'CtxDocumentAuditRequestBody',
+  'GuideRuleSelection',
   'ProcessingContext',
   'Reproducibility',
   'RenderPreservation',
