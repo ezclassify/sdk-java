@@ -175,7 +175,7 @@ A preset is listed by name and scope only; `applyPreset` is the way to expand on
 
 ### Another scheme in the Context
 
-A Context can hold more than one scheme, such as the two sides of a crosswalk. `context.scheme()` is the primary scheme. `context.schemeView(selector)` is any other one, named by its Context-local key or by an artifact id that names exactly one of them; `context.describeContext().schemes()` lists the selectors. The view has every operation and read `scheme()` has, and none of them take a selector: the view sends it as `?scheme=` on every request.
+A Context can hold more than one scheme, such as the two sides of a crosswalk. `context.scheme()` is the primary scheme. `context.schemeView(selector)` is any other one, named by its Context-local key; `context.describeContext().schemes()` lists the selectors. The view has every operation and read `scheme()` has, and none of them take a selector: the view sends it as `?scheme=` on every request.
 
 ```java
 ContextScheme source = context.schemeView("source");

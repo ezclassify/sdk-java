@@ -58,9 +58,8 @@ import java.util.Map;
  * <p>A Context can hold more than one scheme, such as the source and target of a crosswalk. {@link
  * EzClassifyContext#scheme()} is the view of the primary scheme and sends no selector. {@link
  * EzClassifyContext#schemeView(String)} is the view of another scheme the Context holds, named by
- * its Context-local key or unambiguous artifact id, and sends that selector as the {@code scheme}
- * query parameter on every operation and read. The operations themselves take no selector: the view
- * picks the scheme. A selector the Context does not hold is refused by the server with a 404 on the
+ * its Context-local key, and sends that selector as the {@code scheme} query parameter on every
+ * operation and read. The operations themselves take no selector: the view picks the scheme. A selector the Context does not hold is refused by the server with a 404 on the
  * first call; it never falls back to the primary scheme. Answers are cached per view, so the same
  * request on two views is two answers.
  *
@@ -105,7 +104,7 @@ public final class ContextScheme {
 
   private final EzClassifyContext ctx;
 
-  /** The Context-local key or unambiguous artifact id this view sends, or null for the primary. */
+  /** The Context-local key this view sends, or null for the primary. */
   private final String selector;
 
   ContextScheme(EzClassifyContext ctx, String selector) {
