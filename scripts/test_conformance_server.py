@@ -4,6 +4,7 @@ import ast
 import os
 from pathlib import Path
 import unittest
+import urllib.parse
 from unittest.mock import patch
 
 SCRIPT = Path(__file__).with_name("conformance-server.sh")
@@ -11,7 +12,7 @@ source = SCRIPT.read_text().split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
 functions = [
     node for node in ast.parse(source).body if isinstance(node, ast.FunctionDef)
 ]
-helpers = {"os": os}
+helpers = {"os": os, "urllib": urllib}
 # Evaluate only local helper definitions, excluding the network-driving script body.
 exec(compile(ast.Module(body=functions, type_ignores=[]), str(SCRIPT), "exec"), helpers)  # noqa: S102
 
@@ -45,6 +46,16 @@ class ServerConformanceHelpers(unittest.TestCase):
             self.assertEqual(
                 helpers["request_headers"](), {"Content-Type": "application/json"}
             )
+
+    def test_scheme_selector_is_the_query_and_absent_means_the_primary(self):
+        path = "/v1/ctx/ref-ctx-2/1.0.0/scheme/process"
+        self.assertEqual(helpers["select_scheme"](path, None), path)
+        self.assertEqual(
+            helpers["select_scheme"](path, "ref-scheme-2"), path + "?scheme=ref-scheme-2"
+        )
+        self.assertEqual(
+            helpers["select_scheme"](path, "a b&c"), path + "?scheme=a+b%26c"
+        )
 
     def test_context_operation_returns_its_result(self):
         result = {"valid": False}

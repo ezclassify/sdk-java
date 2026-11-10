@@ -49,9 +49,12 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-scopes.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-label-presets.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-process.ok", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-process.selected-scheme", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-process.unknown-scheme", Boundary.PUBLIC),
           Map.entry("ctx-scheme-process.empty", Boundary.PUBLIC),
           Map.entry("ctx-scheme-process.outputs-and-options", Boundary.PUBLIC),
           Map.entry("ctx-scheme-validate.ok", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-validate.selected-scheme", Boundary.PUBLIC),
           Map.entry("ctx-scheme-validate.assertions", Boundary.PUBLIC),
           Map.entry("ctx-scheme-validate.both-sources", Boundary.PRIVATE),
           Map.entry("ctx-scheme-validate.no-source", Boundary.PRIVATE),
@@ -68,6 +71,7 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-filter-concepts.no-match", Boundary.PUBLIC),
           Map.entry("ctx-scheme-scan.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-aggregate.ok", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-aggregate.selected-scheme", Boundary.PUBLIC),
           Map.entry("ctx-scheme-aggregate.assertion-sets", Boundary.PUBLIC),
           Map.entry("ctx-scheme-suggest.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-suggest.gated-hidden", Boundary.PUBLIC),
@@ -224,48 +228,48 @@ final class WireCaseDrivers {
           ? ctx.getJson(op)
           : ctx.postJson(op, c.body().getAsJsonObject());
     }
+    // A recorded ?scheme= names the scheme view the public call goes through; the view, not the
+    // driver, puts the selector back on the wire.
+    int queryStart = op.indexOf('?');
+    String route = queryStart < 0 ? op : op.substring(0, queryStart);
+    Map<String, String> query = queryStart < 0 ? Map.of() : query(op.substring(queryStart + 1));
+    ContextScheme s =
+        query.containsKey("scheme") ? ctx.schemeView(query.get("scheme")) : ctx.scheme();
     if ("GET".equals(c.method())) {
-      if (op.isEmpty()) return ctx.describeContext();
-      switch (op) {
+      if (route.isEmpty()) return ctx.describeContext();
+      switch (route) {
         case "scheme" -> {
-          return ctx.scheme().summary();
+          return s.summary();
         }
         case "scheme/concepts" -> {
-          return ctx.scheme().concepts();
+          return s.concepts();
         }
         case "scheme/categories" -> {
-          return ctx.scheme().categories();
+          return s.categories();
         }
         case "scheme/formats" -> {
-          return ctx.scheme().formats();
+          return s.formats();
         }
         case "scheme/grammar" -> {
-          return ctx.scheme().grammar();
+          return s.grammar();
         }
         case "scheme/scopes" -> {
-          return ctx.scheme().scopes();
+          return s.scopes();
         }
         case "scheme/label-presets" -> {
-          return ctx.scheme().labelPresets();
+          return s.labelPresets();
+        }
+        case "scheme/describe-concept" -> {
+          return s.describeConcept(query.get("conceptId"), query.get("categoryId"));
         }
         default -> {}
       }
-      if (op.equals("access/rules")) return ctx.access().rules();
-      if (op.equals("crosswalk/describe")) return ctx.describeCrosswalks();
-      if (op.startsWith("scheme/describe-concept?")) {
-        // These two recorded values are literal non-encoded ASCII ids; request matching stays raw.
-        Map<String, String> query = new java.util.HashMap<>();
-        for (String pair : op.substring(op.indexOf('?') + 1).split("&")) {
-          String[] kv = pair.split("=", 2);
-          query.put(kv[0], kv[1]);
-        }
-        return ctx.scheme().describeConcept(query.get("conceptId"), query.get("categoryId"));
-      }
+      if (route.equals("access/rules")) return ctx.access().rules();
+      if (route.equals("crosswalk/describe")) return ctx.describeCrosswalks();
       throw new AssertionError("unowned public GET " + c.id());
     }
     JsonObject body = c.body().getAsJsonObject();
-    ContextScheme s = ctx.scheme();
-    return switch (op) {
+    return switch (route) {
       case "scheme/process" ->
           s.process(
               text(body, "input"),
@@ -390,6 +394,17 @@ final class WireCaseDrivers {
       case "/v1/ctx" -> client.listContexts();
       default -> client.listContextVersions(c.target().substring(c.target().lastIndexOf('/') + 1));
     };
+  }
+
+  /** Recorded query values are literal non-encoded ASCII ids; request matching stays raw. */
+  private static Map<String, String> query(String raw) {
+    Map<String, String> query = new java.util.HashMap<>();
+    for (String pair : raw.split("&")) {
+      String[] kv = pair.split("=", 2);
+      if (kv.length != 2 || query.put(kv[0], kv[1]) != null)
+        throw new AssertionError("unreadable recorded query " + raw);
+    }
+    return Map.copyOf(query);
   }
 
   private static String text(JsonObject body, String name) {

@@ -573,9 +573,9 @@ class RequestSchemaConformanceTest {
   @Test
   void declaredQueryParametersComeFromTheContract() {
     assertEquals(
-        Set.of(), SPEC.declaredQueryParameters("post", CTX_PREFIX + "scheme/apply-preset"));
+        Set.of("scheme"), SPEC.declaredQueryParameters("post", CTX_PREFIX + "scheme/apply-preset"));
     assertEquals(
-        Set.of(), SPEC.declaredQueryParameters("get", CTX_PREFIX + "scheme/label-presets"));
+        Set.of("scheme"), SPEC.declaredQueryParameters("get", CTX_PREFIX + "scheme/label-presets"));
     assertEquals(Set.of(), SPEC.declaredQueryParameters("get", "/v1/ctx"));
     assertTrue(
         SPEC.declaredQueryParameters("get", CTX_PREFIX + "scheme/describe-concept")
@@ -589,6 +589,14 @@ class RequestSchemaConformanceTest {
             "scheme/grammar",
             "scheme/scopes")) {
       assertEquals(Set.of("scheme"), SPEC.declaredQueryParameters("get", CTX_PREFIX + path), path);
+    }
+    // Every scheme operation takes the selector and nothing else in its query.
+    for (Case c : CASES.values()) {
+      if (!c.route().startsWith("scheme/")) continue;
+      assertEquals(
+          Set.of("scheme"),
+          SPEC.declaredQueryParameters("post", CTX_PREFIX + c.route()),
+          c.route());
     }
   }
 
