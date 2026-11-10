@@ -1133,7 +1133,7 @@ class ContextRemoteTest {
 
   @Test
   void schemeConceptsPreserveCitationFromTheFlatResource() {
-    List<ConceptView> concepts = connect().scheme().concepts("source/a");
+    List<ConceptView> concepts = connect().schemeView("source/a").concepts();
     assertEquals(2, concepts.size());
     ConceptView concept = concepts.get(0);
     assertEquals("L_H", concept.id());

@@ -49,9 +49,20 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Scheme-domain operations bound to an {@link EzClassifyContext}. Every call routes through {@code
- * /v1/ctx/{ctxId}/{version}/scheme/*}; the path selects the composed scheme, so request bodies
- * carry payload only.
+ * Scheme-domain operations bound to one scheme of an {@link EzClassifyContext}. Every call routes
+ * through {@code /v1/ctx/{ctxId}/{version}/scheme/*}; the path selects the Context, so request
+ * bodies carry payload only.
+ *
+ * <h2 id="views">One view per scheme</h2>
+ *
+ * <p>A Context can hold more than one scheme, such as the source and target of a crosswalk. {@link
+ * EzClassifyContext#scheme()} is the view of the primary scheme and sends no selector. {@link
+ * EzClassifyContext#schemeView(String)} is the view of another scheme the Context holds, named by
+ * its Context-local key or unambiguous artifact id, and sends that selector as the {@code scheme}
+ * query parameter on every operation and read. The operations themselves take no selector: the view
+ * picks the scheme. A selector the Context does not hold is refused by the server with a 404 on the
+ * first call; it never falls back to the primary scheme. Answers are cached per view, so the same
+ * request on two views is two answers.
  *
  * <h2 id="reading-and-writing">Reading a marking and writing one</h2>
  *
@@ -67,12 +78,10 @@ import java.util.Map;
  * <h2 id="resources">Reading the scheme itself</h2>
  *
  * <p>{@link #summary()}, {@link #concepts()}, {@link #categories()}, {@link #formats()}, {@link
- * #grammar()}, {@link #scopes()} and {@link #labelPresets()} read what the composed scheme declares
+ * #grammar()}, {@link #scopes()} and {@link #labelPresets()} read what the view's scheme declares
  * rather than operate on a marking. Each answers the bare resource, with no result envelope, and
- * each reaches the server on every call; the response cache holds operations, not these reads.
- * Every one but {@code labelPresets} also takes the context-local key of another scheme the Context
- * holds, which is how a crosswalk's source and target are read. Presets belong to the primary
- * scheme, so {@code labelPresets} has no selector and the server refuses one.
+ * each reaches the server on every call; the response cache holds operations, not these reads. A
+ * crosswalk's source and target are read through their own views.
  *
  * <h2 id="formats">Formats and outputs</h2>
  *
@@ -96,8 +105,12 @@ public final class ContextScheme {
 
   private final EzClassifyContext ctx;
 
-  ContextScheme(EzClassifyContext ctx) {
+  /** The Context-local key or unambiguous artifact id this view sends, or null for the primary. */
+  private final String selector;
+
+  ContextScheme(EzClassifyContext ctx, String selector) {
     this.ctx = ctx;
+    this.selector = selector;
   }
 
   /**
@@ -160,7 +173,7 @@ public final class ContextScheme {
     if (suggestFor != null) Json.put(body, "suggestFor", Json.stringArray(suggestFor));
     return ContextJson.project(
         ctx.postResult(
-            "scheme/process", body, value -> WireJson.fromTree(value, ProcessResult.class)),
+            at("scheme/process"), body, value -> WireJson.fromTree(value, ProcessResult.class)),
         ContextSchemeProcessResult::new);
   }
 
@@ -266,7 +279,7 @@ public final class ContextScheme {
     if (parts != null) Json.put(body, "parts", Json.stringArray(parts));
     return ContextJson.project(
         ctx.postResult(
-            "scheme/validate", body, value -> WireJson.fromTree(value, ValidateResult.class)),
+            at("scheme/validate"), body, value -> WireJson.fromTree(value, ValidateResult.class)),
         ContextSchemeValidateResult::new);
   }
 
@@ -317,7 +330,9 @@ public final class ContextScheme {
     if (parts != null) Json.put(body, "parts", Json.stringArray(parts));
     return ContextJson.project(
         ctx.postResult(
-            "scheme/explain", body, value -> ContextJson.explanationTrace(value.getAsJsonObject())),
+            at("scheme/explain"),
+            body,
+            value -> ContextJson.explanationTrace(value.getAsJsonObject())),
         ContextSchemeExplainResult::new);
   }
 
@@ -360,7 +375,7 @@ public final class ContextScheme {
     option(body, "filter", filter);
     if (includeGated != null) body.addProperty("includeGated", includeGated);
     return ContextJson.project(
-        ctx.postResult("scheme/suggest", body, value -> suggestResult(value, "suggest")),
+        ctx.postResult(at("scheme/suggest"), body, value -> suggestResult(value, "suggest")),
         ContextSchemeSuggestResult::new);
   }
 
@@ -394,7 +409,7 @@ public final class ContextScheme {
     option(body, "filter", options.filter());
     if (options.includeGated() != null) body.addProperty("includeGated", options.includeGated());
     return ContextJson.project(
-        ctx.postResult("scheme/suggest", body, value -> suggestResult(value, "suggest")),
+        ctx.postResult(at("scheme/suggest"), body, value -> suggestResult(value, "suggest")),
         ContextSchemeSuggestResult::new);
   }
 
@@ -448,7 +463,7 @@ public final class ContextScheme {
     // object; the check below, not the envelope, decides whether the answer is whole.
     return ContextJson.project(
         ctx.postResult(
-            "scheme/suggest-for-categories",
+            at("scheme/suggest-for-categories"),
             body,
             value -> suggestionsByCategory(value, categoryIds),
             EzClassifyContext.EmptyResult.ALLOWED),
@@ -535,7 +550,7 @@ public final class ContextScheme {
     if (context != null) Json.put(body, "context", WireJson.toTree(context));
     return ContextJson.project(
         ctx.postResult(
-            "scheme/aggregate",
+            at("scheme/aggregate"),
             body,
             value -> ContextJson.aggregateResult(value.getAsJsonObject())),
         ContextSchemeAggregateResult::new);
@@ -582,14 +597,14 @@ public final class ContextScheme {
     if (context != null) Json.put(body, "context", WireJson.toTree(context));
     return ContextJson.project(
         ctx.postResult(
-            "scheme/aggregate",
+            at("scheme/aggregate"),
             body,
             value -> ContextJson.aggregateResult(value.getAsJsonObject())),
         ContextSchemeAggregateResult::new);
   }
 
   /**
-   * Scan free text for markings recognized by the context's scheme.
+   * Scan free text for markings recognized by this view's scheme.
    *
    * @param text the free text to scan
    * @return the markings found, each with its position in the source text and what validate answers
@@ -624,7 +639,7 @@ public final class ContextScheme {
     option(body, "outputFormat", outputFormat);
     return ContextJson.project(
         ctx.postResult(
-            "scheme/scan", body, value -> WireJson.fromTree(value, ScanResponseBody.class)),
+            at("scheme/scan"), body, value -> WireJson.fromTree(value, ScanResponseBody.class)),
         ContextSchemeScanResult::new);
   }
 
@@ -659,7 +674,7 @@ public final class ContextScheme {
     if (preservation != null) Json.put(body, "preservation", preservation.toWire());
     return ContextJson.project(
         ctx.postResult(
-            "scheme/render", body, value -> WireJson.fromTree(value, RenderResponse.class)),
+            at("scheme/render"), body, value -> WireJson.fromTree(value, RenderResponse.class)),
         ContextSchemeRenderResult::new);
   }
 
@@ -695,7 +710,9 @@ public final class ContextScheme {
     option(body, "outputFormat", outputFormat);
     return ContextJson.project(
         ctx.postResult(
-            "scheme/normalize", body, value -> WireJson.fromTree(value, NormalizeResponse.class)),
+            at("scheme/normalize"),
+            body,
+            value -> WireJson.fromTree(value, NormalizeResponse.class)),
         ContextSchemeNormalizeResult::new);
   }
 
@@ -736,7 +753,7 @@ public final class ContextScheme {
     option(body, "outputFormat", outputFormat);
     return ContextJson.project(
         ctx.postResult(
-            "scheme/check-coverage",
+            at("scheme/check-coverage"),
             body,
             value -> WireJson.fromTree(value, CheckCoverageResult.class)),
         ContextSchemeCoverageResult::new);
@@ -776,7 +793,7 @@ public final class ContextScheme {
             .append(requiredParam(categoryId, "categoryId"));
     if (view != null && !view.isEmpty()) q.append("&view=").append(enc(view));
     return ContextJson.project(
-        ctx.getResult(q.toString(), value -> conceptDescription(value.getAsJsonObject())),
+        ctx.getResult(at(q.toString()), value -> conceptDescription(value.getAsJsonObject())),
         ContextSchemeConceptDescriptionResult::new);
   }
 
@@ -818,7 +835,7 @@ public final class ContextScheme {
     Json.put(body, "b", b);
     option(body, "inputFormat", inputFormat);
     return ContextJson.project(
-        ctx.postResult("scheme/diff", body, value -> diffResult(value.getAsJsonObject())),
+        ctx.postResult(at("scheme/diff"), body, value -> diffResult(value.getAsJsonObject())),
         ContextSchemeDiffResult::new);
   }
 
@@ -842,7 +859,7 @@ public final class ContextScheme {
     Json.put(body, "query", query);
     return ContextJson.project(
         ctx.postResult(
-            "scheme/filter-concepts", body, value -> filterResult(value.getAsJsonObject())),
+            at("scheme/filter-concepts"), body, value -> filterResult(value.getAsJsonObject())),
         ContextSchemeFilterConceptsResult::new);
   }
 
@@ -863,7 +880,7 @@ public final class ContextScheme {
     JsonObject body = new JsonObject();
     Json.put(body, "assertions", ContextJson.assertionArray(assertions));
     return ContextJson.project(
-        ctx.postResult("scheme/notices", body, value -> notices(value.getAsJsonArray())),
+        ctx.postResult(at("scheme/notices"), body, value -> notices(value.getAsJsonArray())),
         ContextSchemeNoticesResult::new);
   }
 
@@ -884,202 +901,112 @@ public final class ContextScheme {
   }
 
   /**
-   * Build a render-ready structural view of the context's composed scheme.
+   * Build a render-ready structural view of this view's scheme.
    *
    * @return the structural view, with the scheme's concepts grouped by category
    */
   public ContextSchemeViewResult view() {
     return ContextJson.project(
         ctx.postResult(
-            "scheme/view",
+            at("scheme/view"),
             new JsonObject(),
             value -> WireJson.fromTree(value, SchemeViewResponse.class)),
         ContextSchemeViewResult::new);
   }
 
   /**
-   * Read the metadata of the context's primary composed scheme.
+   * Read the metadata of this view's scheme.
    *
    * <p>The summary is the scheme's identity and presentation: id, version, name, description, the
    * default scope and render formats, the display vocabulary and color rules. It answers the bare
    * resource with no result envelope, and it reaches the server on every call.
    *
    * @return the scheme summary
-   * @throws EzClassifyClientException if the server rejects the request, including a 429 that
-   *     carries {@link EzClassifyClientException#retryAfter()}, or answers a malformed body
-   */
-  public SchemeSummary summary() {
-    return summary(null);
-  }
-
-  /**
-   * Read the metadata of a scheme held by this Context.
-   *
-   * @param scheme the context-local scheme key or artifact id, or {@code null} for the primary
-   *     scheme
-   * @return the scheme summary
-   * @throws IllegalArgumentException if {@code scheme} is blank
-   * @throws EzClassifyClientException if the server rejects the request, including a 404 for a key
-   *     the Context does not hold and a 429 that carries {@link
+   * @throws EzClassifyClientException if the server rejects the request, including a 404 for a
+   *     selector the Context does not hold and a 429 that carries {@link
    *     EzClassifyClientException#retryAfter()}, or answers a malformed body
    */
-  public SchemeSummary summary(String scheme) {
-    return ctx.getResource("scheme" + schemeQuery(scheme), SchemeSummary.class);
+  public SchemeSummary summary() {
+    return ctx.getResource(at("scheme"), SchemeSummary.class);
   }
 
   /**
-   * List every concept of the context's primary composed scheme.
+   * List every concept of this view's scheme.
    *
    * @return the concepts as concept views: id, name, views, categories, parents, position, rank and
    *     display metadata
-   * @throws EzClassifyClientException if the server rejects the request or returns a non-array
-   *     response
+   * @throws EzClassifyClientException if the server rejects the request, including a 404 for a
+   *     selector the Context does not hold, or returns a non-array response
    */
   public List<ConceptView> concepts() {
-    return concepts(null);
+    return ctx.getResourceList(at("scheme/concepts"), ConceptView.class);
   }
 
   /**
-   * List every concept of a scheme held by this Context.
-   *
-   * @param scheme the context-local scheme key or artifact id, or {@code null} for the primary
-   *     scheme
-   * @return the concepts as concept views: id, name, views, categories, parents, position, rank and
-   *     display metadata
-   * @throws IllegalArgumentException if {@code scheme} is blank
-   * @throws EzClassifyClientException if the server rejects the request or returns a non-array
-   *     response
-   */
-  public List<ConceptView> concepts(String scheme) {
-    return ctx.getResourceList("scheme/concepts" + schemeQuery(scheme), ConceptView.class);
-  }
-
-  /**
-   * List every category of the context's primary composed scheme, in declared order.
+   * List every category of this view's scheme, in declared order.
    *
    * @return the categories as category views: label, scopes, rollup, default concept and concept
    *     sort order
-   * @throws EzClassifyClientException if the server rejects the request or returns a non-array
-   *     response
+   * @throws EzClassifyClientException if the server rejects the request, including a 404 for a
+   *     selector the Context does not hold, or returns a non-array response
    */
   public List<CategoryView> categories() {
-    return categories(null);
+    return ctx.getResourceList(at("scheme/categories"), CategoryView.class);
   }
 
   /**
-   * List every category of a scheme held by this Context, in declared order.
-   *
-   * @param scheme the context-local scheme key or artifact id, or {@code null} for the primary
-   *     scheme
-   * @return the categories as category views: label, scopes, rollup, default concept and concept
-   *     sort order
-   * @throws IllegalArgumentException if {@code scheme} is blank
-   * @throws EzClassifyClientException if the server rejects the request or returns a non-array
-   *     response
-   */
-  public List<CategoryView> categories(String scheme) {
-    return ctx.getResourceList("scheme/categories" + schemeQuery(scheme), CategoryView.class);
-  }
-
-  /**
-   * List the formats the context's primary composed scheme writes.
+   * List the formats this view's scheme writes.
    *
    * @return one format view per format: its id, the surface it writes, its resolved layout and how
    *     its text is framed. The field trees stay server-side.
-   * @throws EzClassifyClientException if the server rejects the request or returns a non-array
-   *     response
+   * @throws EzClassifyClientException if the server rejects the request, including a 404 for a
+   *     selector the Context does not hold, or returns a non-array response
    */
   public List<FormatView> formats() {
-    return formats(null);
+    return ctx.getResourceList(at("scheme/formats"), FormatView.class);
   }
 
   /**
-   * List the formats a scheme held by this Context writes.
-   *
-   * @param scheme the context-local scheme key or artifact id, or {@code null} for the primary
-   *     scheme
-   * @return one format view per format: its id, the surface it writes, its resolved layout and how
-   *     its text is framed. The field trees stay server-side.
-   * @throws IllegalArgumentException if {@code scheme} is blank
-   * @throws EzClassifyClientException if the server rejects the request or returns a non-array
-   *     response
-   */
-  public List<FormatView> formats(String scheme) {
-    return ctx.getResourceList("scheme/formats" + schemeQuery(scheme), FormatView.class);
-  }
-
-  /**
-   * Read the parse grammar of the context's primary composed scheme.
+   * Read the parse grammar of this view's scheme.
    *
    * @return whether the vocabulary is matched case-sensitively and whether surrounding whitespace
    *     is ignored
-   * @throws EzClassifyClientException if the server rejects the request or answers a malformed body
+   * @throws EzClassifyClientException if the server rejects the request, including a 404 for a
+   *     selector the Context does not hold, or answers a malformed body
    */
   public SchemeGrammar grammar() {
-    return grammar(null);
+    return ctx.getResource(at("scheme/grammar"), SchemeGrammar.class);
   }
 
   /**
-   * Read the parse grammar of a scheme held by this Context.
-   *
-   * @param scheme the context-local scheme key or artifact id, or {@code null} for the primary
-   *     scheme
-   * @return whether the vocabulary is matched case-sensitively and whether surrounding whitespace
-   *     is ignored
-   * @throws IllegalArgumentException if {@code scheme} is blank
-   * @throws EzClassifyClientException if the server rejects the request or answers a malformed body
-   */
-  public SchemeGrammar grammar(String scheme) {
-    return ctx.getResource("scheme/grammar" + schemeQuery(scheme), SchemeGrammar.class);
-  }
-
-  /**
-   * List the scopes the context's primary composed scheme declares, in declaration order.
+   * List the scopes this view's scheme declares, in declaration order.
    *
    * @return the scope definitions in the order a selector offers them; empty, never {@code null},
    *     when the scheme declares none
-   * @throws EzClassifyClientException if the server rejects the request or returns a non-array
-   *     response
+   * @throws EzClassifyClientException if the server rejects the request, including a 404 for a
+   *     selector the Context does not hold, or returns a non-array response
    */
   public List<SchemeScope> scopes() {
-    return scopes(null);
+    return ctx.getResourceList(at("scheme/scopes"), SchemeScope.class);
   }
 
   /**
-   * List the scopes a scheme held by this Context declares, in declaration order.
-   *
-   * @param scheme the context-local scheme key or artifact id, or {@code null} for the primary
-   *     scheme
-   * @return the scope definitions in the order a selector offers them; empty, never {@code null},
-   *     when the scheme declares none
-   * @throws IllegalArgumentException if {@code scheme} is blank
-   * @throws EzClassifyClientException if the server rejects the request or returns a non-array
-   *     response
-   */
-  public List<SchemeScope> scopes(String scheme) {
-    return ctx.getResourceList("scheme/scopes" + schemeQuery(scheme), SchemeScope.class);
-  }
-
-  /**
-   * List the label presets of the context's primary scheme.
+   * List the label presets of this view's scheme.
    *
    * <p>A preset is listed by name and scope only: the marking it stands for stays server-side, and
-   * {@link #applyPreset(String)} is the only way to expand one. Presets belong to the primary
-   * scheme, the one {@code applyPreset} expands them in, so there is no scheme selector and the
-   * server refuses one.
+   * {@link #applyPreset(String)} on the same view is the only way to expand one.
    *
    * @return one preset view per preset: id, label, description and scope; empty, never {@code
    *     null}, when the scheme declares none
-   * @throws EzClassifyClientException if the server rejects the request or returns a non-array
-   *     response
+   * @throws EzClassifyClientException if the server rejects the request, including a 404 for a
+   *     selector the Context does not hold, or returns a non-array response
    */
   public List<LabelPresetView> labelPresets() {
-    return ctx.getResourceList("scheme/label-presets", LabelPresetView.class);
+    return ctx.getResourceList(at("scheme/label-presets"), LabelPresetView.class);
   }
 
   /**
-   * Expand a label preset through the context's primary scheme, written in the scheme's default
-   * output.
+   * Expand a label preset through this view's scheme, written in the scheme's default output.
    *
    * @param presetId the id of the preset to expand
    * @return what {@link #validate(String)} answers for the marking the preset stands for
@@ -1114,7 +1041,9 @@ public final class ContextScheme {
     option(body, "outputFormat", outputFormat);
     return ContextJson.project(
         ctx.postResult(
-            "scheme/apply-preset", body, value -> WireJson.fromTree(value, ValidateResult.class)),
+            at("scheme/apply-preset"),
+            body,
+            value -> WireJson.fromTree(value, ValidateResult.class)),
         ContextSchemeValidateResult::new);
   }
 
@@ -1149,11 +1078,13 @@ public final class ContextScheme {
   }
 
   /**
-   * The query a scheme resource read sends: nothing for the primary scheme, otherwise the one
-   * parameter these operations declare.
+   * The request path for a scheme route on this view: the route as is for the primary scheme,
+   * otherwise the route with the one {@code scheme} query parameter every scheme route declares,
+   * joined to any query the route already carries.
    */
-  private static String schemeQuery(String scheme) {
-    return scheme == null ? "" : "?scheme=" + requiredParam(scheme, "scheme");
+  private String at(String route) {
+    if (selector == null) return route;
+    return route + (route.indexOf('?') < 0 ? '?' : '&') + "scheme=" + enc(selector);
   }
 
   /** Encode a required query-string identifier, refusing an empty one at the boundary. */

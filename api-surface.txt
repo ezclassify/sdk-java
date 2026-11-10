@@ -106,18 +106,12 @@ public final class com.ezclassify.rest.client.ContextScheme {
   public com.ezclassify.rest.contract.ContextSchemeValidateResult validate(java.util.List<com.ezclassify.rest.contract.Assertion>, com.ezclassify.rest.client.FactsValidateOptions);
   public com.ezclassify.rest.contract.ContextSchemeViewResult view();
   public com.ezclassify.rest.contract.SchemeGrammar grammar();
-  public com.ezclassify.rest.contract.SchemeGrammar grammar(java.lang.String);
   public com.ezclassify.rest.contract.SchemeSummary summary();
-  public com.ezclassify.rest.contract.SchemeSummary summary(java.lang.String);
   public java.util.List<com.ezclassify.rest.contract.CategoryView> categories();
-  public java.util.List<com.ezclassify.rest.contract.CategoryView> categories(java.lang.String);
   public java.util.List<com.ezclassify.rest.contract.ConceptView> concepts();
-  public java.util.List<com.ezclassify.rest.contract.ConceptView> concepts(java.lang.String);
   public java.util.List<com.ezclassify.rest.contract.FormatView> formats();
-  public java.util.List<com.ezclassify.rest.contract.FormatView> formats(java.lang.String);
   public java.util.List<com.ezclassify.rest.contract.LabelPresetView> labelPresets();
   public java.util.List<com.ezclassify.rest.contract.SchemeScope> scopes();
-  public java.util.List<com.ezclassify.rest.contract.SchemeScope> scopes(java.lang.String);
 }
 public final class com.ezclassify.rest.client.ExplainOptions extends java.lang.Record {
   public com.ezclassify.rest.client.ExplainOptions(java.lang.String, java.lang.String, java.lang.String, java.util.List<com.ezclassify.rest.contract.Assertion>, com.ezclassify.rest.contract.ProcessingContext, java.util.List<java.lang.String>);
@@ -172,6 +166,7 @@ public final class com.ezclassify.rest.client.EzClassifyContext {
   public com.ezclassify.rest.client.ContextDocument document();
   public com.ezclassify.rest.client.ContextGuide guide();
   public com.ezclassify.rest.client.ContextScheme scheme();
+  public com.ezclassify.rest.client.ContextScheme schemeView(java.lang.String);
   public com.ezclassify.rest.contract.CtxDescribeResponseBody describeContext();
   public java.lang.String contextId();
   public java.lang.String resolvedVersion();

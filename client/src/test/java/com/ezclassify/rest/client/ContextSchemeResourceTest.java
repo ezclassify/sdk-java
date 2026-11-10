@@ -73,60 +73,21 @@ class ContextSchemeResourceTest {
 
   /** One read: its route under the Context prefix, a canned answer, and how it is called. */
   private record Read(
-      String name,
-      String route,
-      String answer,
-      boolean takesScheme,
-      Function<ContextScheme, Object> call,
-      Function<ContextScheme, Object> callOfScheme) {}
+      String name, String route, String answer, Function<ContextScheme, Object> call) {}
 
   private static final List<Read> READS =
       List.of(
-          new Read("summary", "scheme", SUMMARY, true, s -> s.summary(), s -> s.summary("src/a")),
+          new Read("summary", "scheme", SUMMARY, ContextScheme::summary),
+          new Read("concepts", "scheme/concepts", CONCEPTS, ContextScheme::concepts),
+          new Read("categories", "scheme/categories", CATEGORIES, ContextScheme::categories),
+          new Read("formats", "scheme/formats", FORMATS, ContextScheme::formats),
+          new Read("grammar", "scheme/grammar", GRAMMAR, ContextScheme::grammar),
+          new Read("scopes", "scheme/scopes", SCOPES, ContextScheme::scopes),
           new Read(
-              "concepts",
-              "scheme/concepts",
-              CONCEPTS,
-              true,
-              s -> s.concepts(),
-              s -> s.concepts("src/a")),
-          new Read(
-              "categories",
-              "scheme/categories",
-              CATEGORIES,
-              true,
-              s -> s.categories(),
-              s -> s.categories("src/a")),
-          new Read(
-              "formats",
-              "scheme/formats",
-              FORMATS,
-              true,
-              s -> s.formats(),
-              s -> s.formats("src/a")),
-          new Read(
-              "grammar",
-              "scheme/grammar",
-              GRAMMAR,
-              true,
-              s -> s.grammar(),
-              s -> s.grammar("src/a")),
-          new Read(
-              "scopes", "scheme/scopes", SCOPES, true, s -> s.scopes(), s -> s.scopes("src/a")),
-          new Read(
-              "label-presets",
-              "scheme/label-presets",
-              LABEL_PRESETS,
-              false,
-              s -> s.labelPresets(),
-              null));
+              "label-presets", "scheme/label-presets", LABEL_PRESETS, ContextScheme::labelPresets));
 
   static Stream<Arguments> reads() {
     return READS.stream().map(read -> Arguments.of(read.name(), read));
-  }
-
-  static Stream<Arguments> selectableReads() {
-    return READS.stream().filter(Read::takesScheme).map(read -> Arguments.of(read.name(), read));
   }
 
   /** A stub that serves every canned answer under the Context prefix. */
@@ -138,7 +99,11 @@ class ContextSchemeResourceTest {
   }
 
   private static ContextScheme scheme(ClientStubServer stub) {
-    return new EzClassifyContext(stub.url(), "district", "1.0.0", null).scheme();
+    return context(stub).scheme();
+  }
+
+  private static EzClassifyContext context(ClientStubServer stub) {
+    return new EzClassifyContext(stub.url(), "district", "1.0.0", null);
   }
 
   @Test
@@ -169,38 +134,14 @@ class ContextSchemeResourceTest {
   }
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("selectableReads")
-  void aNamedSchemeIsTheOnlyQueryParameterAndIsEncoded(String name, Read read) throws Exception {
+  @MethodSource("reads")
+  void aSchemeViewSendsItsSelectorAsTheOnlyQueryParameterEncoded(String name, Read read)
+      throws Exception {
     try (ClientStubServer stub = stub()) {
-      assertNotNull(read.callOfScheme().apply(scheme(stub)));
+      assertNotNull(read.call().apply(context(stub).schemeView("src/a")));
       assertEquals("scheme=src%2Fa", stub.lastRequest().query(), name);
       assertEquals(PREFIX + "/" + read.route(), stub.lastRequest().path(), name);
     }
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("selectableReads")
-  void aBlankSchemeIsRefusedBeforeAnyRequestIsSent(String name, Read read) throws Exception {
-    try (ClientStubServer stub = stub()) {
-      ContextScheme scheme = scheme(stub);
-      for (String blank : new String[] {"", "  "}) {
-        Function<ContextScheme, Object> call = blankCall(name, blank);
-        assertThrows(IllegalArgumentException.class, () -> call.apply(scheme), name);
-      }
-      assertEquals(0, stub.requestCount(), name);
-    }
-  }
-
-  private static Function<ContextScheme, Object> blankCall(String name, String blank) {
-    return switch (name) {
-      case "summary" -> s -> s.summary(blank);
-      case "concepts" -> s -> s.concepts(blank);
-      case "categories" -> s -> s.categories(blank);
-      case "formats" -> s -> s.formats(blank);
-      case "grammar" -> s -> s.grammar(blank);
-      case "scopes" -> s -> s.scopes(blank);
-      default -> throw new AssertionError(name);
-    };
   }
 
   /** The cache holds operations; a resource read goes to the server every time, pinned or not. */
@@ -354,10 +295,12 @@ class ContextSchemeResourceTest {
       stub.setResponse(
           PREFIX + "/scheme/formats", "{\"error\":\"scheme_not_found\",\"code\":\"NOT_FOUND\"}");
       EzClassifyClientException error =
-          assertThrows(EzClassifyClientException.class, () -> scheme(stub).formats("nope"));
+          assertThrows(
+              EzClassifyClientException.class, () -> context(stub).schemeView("nope").formats());
       assertEquals(404, error.statusCode());
       assertEquals("NOT_FOUND", error.code());
       assertEquals(1, stub.requestCount());
+      assertEquals("scheme=nope", stub.lastRequest().query());
     }
   }
 }

@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -35,13 +36,15 @@ import java.util.function.Function;
  *
  * <p>Obtain one with {@link EzClassifyClient#connect(String, String, String)}, then reach the
  * operations through {@link #scheme()}, {@link #guide()}, {@link #access()}, {@link #crosswalk()},
- * and {@link #document()}:
+ * and {@link #document()}. Another scheme the Context holds is reached through {@link
+ * #schemeView(String)}:
  *
  * <pre>{@code
  * EzClassifyContext ctx = EzClassifyClient.connect("http://localhost:8080", "my-ctx", "1.0");
  * var response = ctx.scheme().process("MARKING");
  * ProcessResult r = response.result();
  * String resolved = ctx.resolvedVersion(); // concrete version the server resolved
+ * var source = ctx.schemeView("source").validate("MARKING"); // a second scheme the Context holds
  * }</pre>
  */
 public final class EzClassifyContext {
@@ -93,6 +96,8 @@ public final class EzClassifyContext {
   private final ResponseCache responseCache;
   private final Duration requestTimeout;
   private final Object describeLock = new Object();
+  private final ContextScheme primaryScheme = new ContextScheme(this, null);
+  private final ConcurrentHashMap<String, ContextScheme> schemeViews = new ConcurrentHashMap<>();
   private volatile String resolvedVersion;
   private volatile CtxDescribeResponseBody description;
 
@@ -220,12 +225,32 @@ public final class EzClassifyContext {
   }
 
   /**
-   * Scheme-domain operations bound to this context.
+   * Scheme-domain operations bound to this Context's primary scheme.
    *
-   * @return a handle for the scheme-domain operations on this context
+   * @return the view of the primary scheme, which sends no scheme selector
    */
   public ContextScheme scheme() {
-    return new ContextScheme(this);
+    return primaryScheme;
+  }
+
+  /**
+   * Scheme-domain operations bound to one scheme this Context holds, such as a crosswalk's source
+   * or target. Every operation and read on the view sends {@code selector} as the {@code scheme}
+   * query parameter; the operations take no selector of their own. {@link #describeContext()} lists
+   * the selector of every scheme the Context holds.
+   *
+   * <p>The server resolves the selector. One the Context does not hold answers 404 on the first
+   * call and is never answered by the primary scheme instead. Views are held per selector, and each
+   * view's answers are cached apart from every other view's.
+   *
+   * @param selector the Context-local scheme key, or an artifact id that names exactly one scheme
+   *     the Context holds
+   * @return the view of that scheme, the same instance on every call with the same selector
+   * @throws IllegalArgumentException if {@code selector} is null or blank
+   */
+  public ContextScheme schemeView(String selector) {
+    Args.requiredId(selector, "selector");
+    return schemeViews.computeIfAbsent(selector, key -> new ContextScheme(this, key));
   }
 
   /**
@@ -419,7 +444,7 @@ public final class EzClassifyContext {
 
   <T> ContextOperationResult<T> getResult(
       String opWithQuery, Function<JsonElement, T> resultParser) {
-    if (cacheOptions.disableCache() || !opWithQuery.startsWith("scheme/describe-concept?")) {
+    if (cacheOptions.disableCache() || !"scheme/describe-concept".equals(route(opWithQuery))) {
       return parseResult(getJson(opWithQuery), resultParser, EmptyResult.REFUSED);
     }
     String key = cacheKey("GET", opWithQuery, null);
@@ -539,12 +564,14 @@ public final class EzClassifyContext {
   }
 
   private boolean cacheablePost(String op) {
-    return CACHED_POST_OPERATIONS.contains(op)
-        || (cacheOptions.cacheAccessDecisions() && "access/check".equals(op));
+    String route = route(op);
+    return CACHED_POST_OPERATIONS.contains(route)
+        || (cacheOptions.cacheAccessDecisions() && "access/check".equals(route));
   }
 
-  private long ttlNanos(String op) {
+  private long ttlNanos(String opWithQuery) {
     if (pinned()) return Long.MAX_VALUE;
+    String op = route(opWithQuery);
     if ("scheme/scan".equals(op)) return Duration.ofMinutes(2).toNanos();
     if ("scheme/describe-concept".equals(op)
         || "access/rules".equals(op)
@@ -687,8 +714,17 @@ public final class EzClassifyContext {
    * no version leaves the version segment out of the URL, but it is the same operation.
    */
   private static String operation(String method, String op) {
-    int query = op.indexOf('?');
-    String route = query < 0 ? op : op.substring(0, query);
+    String route = route(op);
     return method + " /v1/ctx/{ctxId}/{version}" + (route.isEmpty() ? "" : "/" + route);
+  }
+
+  /**
+   * The route an operation path names, without its query. A scheme view's selector travels in the
+   * query, so the route is what picks the operation's caching rules and contract shape, and the
+   * full path, query included, is what keys its cached answer.
+   */
+  private static String route(String opWithQuery) {
+    int query = opWithQuery.indexOf('?');
+    return query < 0 ? opWithQuery : opWithQuery.substring(0, query);
   }
 }

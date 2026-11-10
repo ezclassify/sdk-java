@@ -1,0 +1,205 @@
+package com.ezclassify.rest.client;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.ezclassify.rest.contract.Assertion;
+import com.ezclassify.rest.contract.AssertionConfidence;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+/**
+ * The per-scheme view of a Context: {@link EzClassifyContext#schemeView(String)} addresses a scheme
+ * the Context holds by its selector, sends that selector as {@code ?scheme=} on every scheme
+ * operation, keeps its answers apart from every other view's, and never lets the primary scheme
+ * answer for a selector the server refuses.
+ */
+class ContextSchemeViewTest {
+  private static final String PREFIX = "/v1/ctx/district/1.0.0";
+
+  private static final String RESOLUTION =
+      "\"resolution\":{\"contextId\":\"district\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[]";
+  private static final String PROCESS_ENVELOPE =
+      "{"
+          + RESOLUTION
+          + ",\"result\":{\"assertions\":[],\"valid\":true,\"inputWasValid\":true,\"errors\":[],"
+          + "\"warnings\":[],\"appliedFixes\":[],\"rendered\":\"H\",\"assessment\":{\"emitted\":[],"
+          + "\"omitted\":[],\"collapsed\":[],\"conflicts\":[],\"unrepresentable\":[]},\"notices\":[],"
+          + "\"proposedFixes\":[],\"renders\":{}}}";
+
+  private static final Assertion LEVEL =
+      new Assertion(
+          "level", "H", AssertionConfidence.CERTAIN, null, null, null, null, "user", null, null);
+
+  /** One scheme operation: its route under the Context prefix and a call that sends it. */
+  private record Operation(String route, Consumer<ContextScheme> call) {}
+
+  private static final List<Operation> OPERATIONS =
+      List.of(
+          new Operation("scheme/process", s -> s.process("H")),
+          new Operation("scheme/validate", s -> s.validate("H")),
+          new Operation("scheme/validate", s -> s.validate(List.of(LEVEL))),
+          new Operation("scheme/explain", s -> s.explain("H")),
+          new Operation("scheme/suggest", s -> s.suggest("H")),
+          new Operation(
+              "scheme/suggest-for-categories",
+              s -> s.suggestForCategories(List.of(LEVEL), List.of("level"))),
+          new Operation("scheme/aggregate", s -> s.aggregate(List.of("H"))),
+          new Operation("scheme/aggregate", s -> s.aggregateAssertions(List.of(List.of(LEVEL)))),
+          new Operation("scheme/scan", s -> s.scan("text H text")),
+          new Operation("scheme/render", s -> s.render(List.of(LEVEL))),
+          new Operation("scheme/normalize", s -> s.normalize("H")),
+          new Operation("scheme/check-coverage", s -> s.checkCoverage(List.of("H"), "H")),
+          new Operation("scheme/describe-concept", s -> s.describeConcept("H", "level")),
+          new Operation("scheme/diff", s -> s.diff("H", "L")),
+          new Operation("scheme/filter-concepts", s -> s.filterConcepts("H")),
+          new Operation("scheme/notices", s -> s.notices(List.of(LEVEL))),
+          new Operation("scheme/view", ContextScheme::view),
+          new Operation("scheme/apply-preset", s -> s.applyPreset("preset")),
+          new Operation("scheme", ContextScheme::summary),
+          new Operation("scheme/concepts", ContextScheme::concepts),
+          new Operation("scheme/categories", ContextScheme::categories),
+          new Operation("scheme/formats", ContextScheme::formats),
+          new Operation("scheme/grammar", ContextScheme::grammar),
+          new Operation("scheme/scopes", ContextScheme::scopes),
+          new Operation("scheme/label-presets", ContextScheme::labelPresets));
+
+  static Stream<Arguments> operations() {
+    return OPERATIONS.stream().map(op -> Arguments.of(op.route(), op));
+  }
+
+  /** A stub that serves only the Context description: every operation answers 404. */
+  private static ClientStubServer stub() throws Exception {
+    Map<String, String> routes = new HashMap<>();
+    routes.put(PREFIX, ClientStubServer.description(PREFIX));
+    return new ClientStubServer(routes, "1.0.0");
+  }
+
+  private static EzClassifyContext context(ClientStubServer stub) {
+    return new EzClassifyContext(stub.url(), "district", "1.0.0", null);
+  }
+
+  /** The request's query parameters as a set, so a route's own parameters keep their place. */
+  private static Set<String> queryOf(ClientStubServer stub) {
+    String query = stub.lastRequest().query();
+    return query == null ? Set.of() : Arrays.stream(query.split("&")).collect(Collectors.toSet());
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("operations")
+  void aSchemeViewSendsItsSelectorOnEveryOperation(String route, Operation op) throws Exception {
+    try (ClientStubServer stub = stub()) {
+      ContextScheme view = context(stub).schemeView("src/a");
+      assertThrows(EzClassifyClientException.class, () -> op.call().accept(view), route);
+      assertEquals(PREFIX + "/" + route, stub.lastRequest().path(), route);
+      assertEquals(
+          1,
+          queryOf(stub).stream().filter(p -> p.startsWith("scheme=")).count(),
+          route + " sends one scheme parameter");
+      assertEquals(true, queryOf(stub).contains("scheme=src%2Fa"), route);
+    }
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("operations")
+  void thePrimaryViewSendsNoSelector(String route, Operation op) throws Exception {
+    try (ClientStubServer stub = stub()) {
+      ContextScheme primary = context(stub).scheme();
+      assertThrows(EzClassifyClientException.class, () -> op.call().accept(primary), route);
+      assertEquals(PREFIX + "/" + route, stub.lastRequest().path(), route);
+      assertEquals(0, queryOf(stub).stream().filter(p -> p.startsWith("scheme=")).count(), route);
+    }
+  }
+
+  @Test
+  void aRouteThatCarriesItsOwnQueryKeepsItAndAddsTheSelector() throws Exception {
+    try (ClientStubServer stub = stub()) {
+      ContextScheme view = context(stub).schemeView("target");
+      assertThrows(EzClassifyClientException.class, () -> view.describeConcept("H", "level"));
+      assertEquals(Set.of("conceptId=H", "categoryId=level", "scheme=target"), queryOf(stub));
+    }
+  }
+
+  @Test
+  void viewsAreHeldPerSelector() throws Exception {
+    try (ClientStubServer stub = stub()) {
+      EzClassifyContext context = context(stub);
+      assertSame(context.scheme(), context.scheme());
+      assertSame(context.schemeView("source"), context.schemeView("source"));
+      assertNotSame(context.schemeView("source"), context.schemeView("target"));
+      assertNotSame(context.scheme(), context.schemeView("source"));
+      assertEquals(0, stub.requestCount(), "a view is a binding, not a request");
+    }
+  }
+
+  @Test
+  void aMissingOrBlankSelectorIsRefusedBeforeAnyRequestIsSent() throws Exception {
+    try (ClientStubServer stub = stub()) {
+      EzClassifyContext context = context(stub);
+      for (String selector : new String[] {null, "", "  "}) {
+        assertThrows(IllegalArgumentException.class, () -> context.schemeView(selector));
+      }
+      assertEquals(0, stub.requestCount());
+    }
+  }
+
+  @Test
+  void eachViewCachesItsOwnAnswers() throws Exception {
+    try (ClientStubServer stub = stub()) {
+      stub.setResponse(PREFIX + "/scheme/process", PROCESS_ENVELOPE);
+      EzClassifyContext context = context(stub);
+
+      context.scheme().process("H");
+      assertNull(stub.lastRequest().query());
+      context.schemeView("source").process("H");
+      assertEquals("scheme=source", stub.lastRequest().query());
+      context.schemeView("target").process("H");
+      assertEquals("scheme=target", stub.lastRequest().query());
+      assertEquals(3, stub.requestCount(), "one request per view for the same input");
+
+      context.scheme().process("H");
+      context.schemeView("source").process("H");
+      context.schemeView("target").process("H");
+      assertEquals(3, stub.requestCount(), "each view answers its repeat from its own entry");
+    }
+  }
+
+  @Test
+  void aSelectorTheServerRefusesIsNeverAnsweredByThePrimaryScheme() throws Exception {
+    try (ClientStubServer stub = stub()) {
+      stub.setResponse(PREFIX + "/scheme/process", PROCESS_ENVELOPE);
+      EzClassifyContext context = context(stub);
+      context.scheme().process("H");
+      assertEquals(1, stub.requestCount());
+
+      stub.setStatus(PREFIX + "/scheme/process", 404);
+      stub.setResponse(
+          PREFIX + "/scheme/process", "{\"error\":\"scheme_not_found\",\"code\":\"NOT_FOUND\"}");
+      EzClassifyClientException refused =
+          assertThrows(
+              EzClassifyClientException.class, () -> context.schemeView("nope").process("H"));
+      assertEquals(404, refused.statusCode());
+      assertEquals("scheme=nope", stub.lastRequest().query());
+      assertEquals(2, stub.requestCount());
+
+      // The refusal is not kept, and it names a missing scheme, so the primary's entry stands.
+      assertThrows(EzClassifyClientException.class, () -> context.schemeView("nope").process("H"));
+      assertEquals(3, stub.requestCount());
+      context.scheme().process("H");
+      assertEquals(3, stub.requestCount());
+    }
+  }
+}

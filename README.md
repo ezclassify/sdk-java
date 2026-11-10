@@ -171,13 +171,26 @@ for (FormatView format : scheme.formats()) {
 }
 ```
 
-All but `labelPresets()` take the context-local key of another scheme the Context holds, such as a crosswalk's source or target: `scheme.categories("source")`. Without one they read the primary scheme. Presets belong to the primary scheme, the one `applyPreset` expands them in, so `labelPresets()` takes no key. A preset is listed by name and scope only; `applyPreset` is the way to expand one.
+A preset is listed by name and scope only; `applyPreset` is the way to expand one.
+
+### Another scheme in the Context
+
+A Context can hold more than one scheme, such as the two sides of a crosswalk. `context.scheme()` is the primary scheme. `context.schemeView(selector)` is any other one, named by its Context-local key or by an artifact id that names exactly one of them; `context.describeContext().schemes()` lists the selectors. The view has every operation and read `scheme()` has, and none of them take a selector: the view sends it as `?scheme=` on every request.
+
+```java
+ContextScheme source = context.schemeView("source");
+
+var checked = source.validate("MARKING");
+List<CategoryView> categories = source.categories();
+```
+
+A selector the Context does not hold is a 404 on the first call. It is never answered by the primary scheme. The handle keeps one view per selector, and each view's answers are cached on their own.
 
 ## Response caching
 
 A Context handle answers a repeated identical question from memory. These operations are cached: `process`, `validate`, `explain`, `normalize`, `render`, `diff`, `aggregate`, `aggregateAssertions`, `applyPreset`, `suggest`, `suggestForCategories`, `scan`, `describeConcept`, `access().rules()`, and `describeCrosswalks()`. Every other operation reaches the server on every call.
 
-- **Keys.** Every field of the request is part of the key, so two `process` calls that name different `outputs` or `suggestFor` are two entries, and `explain` never answers from a `process` entry for the same input. Member order and members left unset do not change the key.
+- **Keys.** The scheme view and every field of the request are part of the key, so two `process` calls that name different `outputs` or `suggestFor` are two entries, and `explain` never answers from a `process` entry for the same input. Member order and members left unset do not change the key.
 - **Concurrent calls.** Identical calls made while one is in flight share that one HTTP request. A request that runs longer than its lifetime stays joinable.
 - **Failures.** A refused request and a 200 whose body is missing a required member are never kept. The next call goes back to the server.
 - **Results.** Every call gets its own freshly decoded result, so changing one never affects another caller or a later cached read.

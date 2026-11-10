@@ -457,41 +457,43 @@ class RequestSchemaConformanceTest {
         new GetCase(CTX_PREFIX + "scheme", url -> context(url).scheme().summary()));
     c.put(
         "scheme.summary-of-scheme",
-        new GetCase(CTX_PREFIX + "scheme", url -> context(url).scheme().summary("source/a")));
+        new GetCase(CTX_PREFIX + "scheme", url -> context(url).schemeView("source/a").summary()));
     c.put(
         "scheme.concepts",
         new GetCase(CTX_PREFIX + "scheme/concepts", url -> context(url).scheme().concepts()));
     c.put(
         "scheme.concepts-of-scheme",
         new GetCase(
-            CTX_PREFIX + "scheme/concepts", url -> context(url).scheme().concepts("source/a")));
+            CTX_PREFIX + "scheme/concepts", url -> context(url).schemeView("source/a").concepts()));
     c.put(
         "scheme.categories",
         new GetCase(CTX_PREFIX + "scheme/categories", url -> context(url).scheme().categories()));
     c.put(
         "scheme.categories-of-scheme",
         new GetCase(
-            CTX_PREFIX + "scheme/categories", url -> context(url).scheme().categories("source/a")));
+            CTX_PREFIX + "scheme/categories",
+            url -> context(url).schemeView("source/a").categories()));
     c.put(
         "scheme.formats",
         new GetCase(CTX_PREFIX + "scheme/formats", url -> context(url).scheme().formats()));
     c.put(
         "scheme.formats-of-scheme",
         new GetCase(
-            CTX_PREFIX + "scheme/formats", url -> context(url).scheme().formats("source/a")));
+            CTX_PREFIX + "scheme/formats", url -> context(url).schemeView("source/a").formats()));
     c.put(
         "scheme.grammar",
         new GetCase(CTX_PREFIX + "scheme/grammar", url -> context(url).scheme().grammar()));
     c.put(
         "scheme.grammar-of-scheme",
         new GetCase(
-            CTX_PREFIX + "scheme/grammar", url -> context(url).scheme().grammar("source/a")));
+            CTX_PREFIX + "scheme/grammar", url -> context(url).schemeView("source/a").grammar()));
     c.put(
         "scheme.scopes",
         new GetCase(CTX_PREFIX + "scheme/scopes", url -> context(url).scheme().scopes()));
     c.put(
         "scheme.scopes-of-scheme",
-        new GetCase(CTX_PREFIX + "scheme/scopes", url -> context(url).scheme().scopes("source/a")));
+        new GetCase(
+            CTX_PREFIX + "scheme/scopes", url -> context(url).schemeView("source/a").scopes()));
     c.put(
         "scheme.label-presets",
         new GetCase(
