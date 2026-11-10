@@ -6,9 +6,11 @@ import com.ezclassify.rest.contract.ContextGuideRuleDescriptionResult;
 import com.ezclassify.rest.contract.ContextGuideScanResult;
 import com.ezclassify.rest.contract.ContextGuideViewResult;
 import com.ezclassify.rest.contract.EvaluationResult;
+import com.ezclassify.rest.contract.GuideRuleSelection;
 import com.ezclassify.rest.contract.GuideScanResult;
 import com.ezclassify.rest.contract.GuideViewResponse;
 import com.ezclassify.rest.contract.RuleDescription;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 /**
@@ -74,17 +76,28 @@ public final class ContextGuide {
   }
 
   /**
-   * Evaluate selected rules across every guide in the Context.
+   * Roll up rules selected from several guides. Each selection names the guide that holds its rule,
+   * so two guides that use the same rule id hold two rules. Each guide evaluates the rules selected
+   * from it, with its own dependencies and overrides, and the outcomes are rolled up per target
+   * scheme.
    *
-   * @param ruleIds the ids of the rules to select across the guide set
+   * @param selections the selected rules, each with its guide
    * @return the evaluation result, with the combined marking and contributing rules
-   * @throws IllegalArgumentException if the rule id array is null
+   * @throws IllegalArgumentException if the array or a selection is null, or a selection's guide or
+   *     rule id is null or empty
    */
-  public ContextGuideEvaluationResult evaluateMany(String... ruleIds) {
-    Args.required(ruleIds, "ruleIds");
+  public ContextGuideEvaluationResult evaluateMany(GuideRuleSelection... selections) {
+    Args.required(selections, "selections");
+    JsonArray wire = new JsonArray();
+    for (GuideRuleSelection selection : selections) {
+      Args.required(selection, "selection");
+      JsonObject entry = new JsonObject();
+      Json.put(entry, "guideId", Args.requiredId(selection.guideId(), "guideId"));
+      Json.put(entry, "ruleId", Args.requiredId(selection.ruleId(), "ruleId"));
+      wire.add(entry);
+    }
     JsonObject body = new JsonObject();
-    body.addProperty("allGuides", true);
-    Json.put(body, "selectedRuleIds", Json.stringArray(ruleIds));
+    Json.put(body, "selections", wire);
     return ContextJson.project(
         ctx.postResult("guide/evaluate", body, value -> evaluationResult(value.getAsJsonObject())),
         ContextGuideEvaluationResult::new);

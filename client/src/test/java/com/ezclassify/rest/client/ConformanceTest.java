@@ -410,15 +410,18 @@ class ConformanceTest {
         body.put("assertions", args.size() > 0 ? args.get(0) : Collections.emptyList());
         body.put("userAttributes", args.size() > 1 ? args.get(1) : Collections.emptyMap());
         break;
-      // Guide methods. evaluateMany over the plan's single-guide fixtures is
-      // equivalent to a single-guide evaluate, so it folds onto the ctx
-      // guide/evaluate route (the same fold the client runner uses).
+      // Guide methods. evaluateGuide names the plan's guide; evaluateMany sends
+      // the plan's selections, each already naming its guide.
       case "evaluateGuide":
-      case "evaluateMany":
         if (guideId == null || guideData == null) return null;
         path = ctxBase + "/guide/evaluate";
         body.put("guideId", guideId);
         body.put("selectedRuleIds", arr0);
+        break;
+      case "evaluateMany":
+        if (guideId == null || guideData == null) return null;
+        path = ctxBase + "/guide/evaluate";
+        body.put("selections", arr0);
         break;
       case "guideScan":
         if (guideId == null || guideData == null) return null;

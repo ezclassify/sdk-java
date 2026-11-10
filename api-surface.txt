@@ -59,7 +59,7 @@ public final class com.ezclassify.rest.client.ContextDocument {
 }
 public final class com.ezclassify.rest.client.ContextGuide {
   public com.ezclassify.rest.contract.ContextGuideEvaluationResult evaluate(java.lang.String, java.lang.String...);
-  public com.ezclassify.rest.contract.ContextGuideEvaluationResult evaluateMany(java.lang.String...);
+  public com.ezclassify.rest.contract.ContextGuideEvaluationResult evaluateMany(com.ezclassify.rest.contract.GuideRuleSelection...);
   public com.ezclassify.rest.contract.ContextGuideFilterRulesResult filterRules(java.lang.String);
   public com.ezclassify.rest.contract.ContextGuideFilterRulesResult filterRules(java.lang.String, java.lang.String);
   public com.ezclassify.rest.contract.ContextGuideRuleDescriptionResult describeRule(java.lang.String);
@@ -176,6 +176,7 @@ public final class com.ezclassify.rest.client.EzClassifyContext {
   public java.lang.String contextId();
   public java.lang.String resolvedVersion();
   public java.lang.String version();
+  public java.util.List<com.ezclassify.rest.contract.ContextCrosswalkDescriptor> describeCrosswalks();
   public void clearCache();
   public void resolve();
 }
@@ -1123,6 +1124,70 @@ public final class com.ezclassify.rest.contract.ContextAccessRuleDescriptionResu
   public static final java.lang.String JSON_FIELD_RESPONSE_PROJECTION = "responseProjection";
   public static final java.lang.String JSON_FIELD_RESULT = "result";
 }
+public final class com.ezclassify.rest.contract.ContextCrosswalkCandidate extends java.lang.Record {
+  public com.ezclassify.rest.contract.ContextCrosswalkCandidate(java.lang.String, com.ezclassify.rest.contract.CrosswalkDisposition, com.ezclassify.rest.contract.CrosswalkSelectionCondition, java.util.List<com.ezclassify.rest.contract.AssertionReference>, java.util.List<com.ezclassify.rest.contract.AssertionReference>, java.util.List<com.ezclassify.rest.contract.CrosswalkMapping>, java.util.List<com.ezclassify.rest.contract.CrosswalkTarget>, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+  public com.ezclassify.rest.contract.CrosswalkDisposition disposition();
+  public com.ezclassify.rest.contract.CrosswalkSelectionCondition when();
+  public final boolean equals(java.lang.Object);
+  public final int hashCode();
+  public final java.lang.String toString();
+  public java.lang.String authority();
+  public java.lang.String citation();
+  public java.lang.String guidance();
+  public java.lang.String id();
+  public java.lang.String reason();
+  public java.util.List<com.ezclassify.rest.contract.AssertionReference> score();
+  public java.util.List<com.ezclassify.rest.contract.AssertionReference> sources();
+  public java.util.List<com.ezclassify.rest.contract.CrosswalkMapping> mappings();
+  public java.util.List<com.ezclassify.rest.contract.CrosswalkTarget> targets();
+  public static final java.lang.String JSON_FIELD_AUTHORITY = "authority";
+  public static final java.lang.String JSON_FIELD_CITATION = "citation";
+  public static final java.lang.String JSON_FIELD_DISPOSITION = "disposition";
+  public static final java.lang.String JSON_FIELD_GUIDANCE = "guidance";
+  public static final java.lang.String JSON_FIELD_ID = "id";
+  public static final java.lang.String JSON_FIELD_MAPPINGS = "mappings";
+  public static final java.lang.String JSON_FIELD_REASON = "reason";
+  public static final java.lang.String JSON_FIELD_SCORE = "score";
+  public static final java.lang.String JSON_FIELD_SOURCES = "sources";
+  public static final java.lang.String JSON_FIELD_TARGETS = "targets";
+  public static final java.lang.String JSON_FIELD_WHEN = "when";
+}
+public final class com.ezclassify.rest.contract.ContextCrosswalkDescriptor extends java.lang.Record {
+  public com.ezclassify.rest.contract.ContextCrosswalkDescriptor(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.util.List<com.ezclassify.rest.contract.CrosswalkMapping>, java.util.List<com.ezclassify.rest.contract.ContextCrosswalkSelection>);
+  public final boolean equals(java.lang.Object);
+  public final int hashCode();
+  public final java.lang.String toString();
+  public java.lang.String citation();
+  public java.lang.String guidance();
+  public java.lang.String id();
+  public java.lang.String name();
+  public java.lang.String source();
+  public java.lang.String target();
+  public java.lang.String version();
+  public java.util.List<com.ezclassify.rest.contract.ContextCrosswalkSelection> selections();
+  public java.util.List<com.ezclassify.rest.contract.CrosswalkMapping> mappings();
+  public static final java.lang.String JSON_FIELD_CITATION = "citation";
+  public static final java.lang.String JSON_FIELD_GUIDANCE = "guidance";
+  public static final java.lang.String JSON_FIELD_ID = "id";
+  public static final java.lang.String JSON_FIELD_MAPPINGS = "mappings";
+  public static final java.lang.String JSON_FIELD_NAME = "name";
+  public static final java.lang.String JSON_FIELD_SELECTIONS = "selections";
+  public static final java.lang.String JSON_FIELD_SOURCE = "source";
+  public static final java.lang.String JSON_FIELD_TARGET = "target";
+  public static final java.lang.String JSON_FIELD_VERSION = "version";
+}
+public final class com.ezclassify.rest.contract.ContextCrosswalkSelection extends java.lang.Record {
+  public com.ezclassify.rest.contract.ContextCrosswalkSelection(java.lang.String, com.ezclassify.rest.contract.CrosswalkSelectionStrategy, java.util.List<com.ezclassify.rest.contract.ContextCrosswalkCandidate>);
+  public com.ezclassify.rest.contract.CrosswalkSelectionStrategy strategy();
+  public final boolean equals(java.lang.Object);
+  public final int hashCode();
+  public final java.lang.String toString();
+  public java.lang.String id();
+  public java.util.List<com.ezclassify.rest.contract.ContextCrosswalkCandidate> candidates();
+  public static final java.lang.String JSON_FIELD_CANDIDATES = "candidates";
+  public static final java.lang.String JSON_FIELD_ID = "id";
+  public static final java.lang.String JSON_FIELD_STRATEGY = "strategy";
+}
 public final class com.ezclassify.rest.contract.ContextCrosswalkTranslationResult extends java.lang.Record {
   public com.ezclassify.rest.contract.ContextCrosswalkTranslationResult(com.ezclassify.rest.contract.ContextResolution, com.ezclassify.rest.contract.CrosswalkTranslationResult, java.util.List<com.ezclassify.rest.contract.AssessmentLimitation>, com.ezclassify.rest.contract.DocumentResponseProjection);
   public com.ezclassify.rest.contract.ContextResolution resolution();
@@ -1593,6 +1658,28 @@ public final class com.ezclassify.rest.contract.CrosswalkForbiddenTranslationRes
   public static final java.lang.String JSON_FIELD_STATUS = "status";
   public static final java.lang.String JSON_FIELD_TARGET_SCHEME = "targetScheme";
 }
+public final class com.ezclassify.rest.contract.CrosswalkMapping extends java.lang.Record {
+  public com.ezclassify.rest.contract.AssertionReference source();
+  public com.ezclassify.rest.contract.CrosswalkDisposition disposition();
+  public com.ezclassify.rest.contract.CrosswalkMapping(java.lang.String, com.ezclassify.rest.contract.AssertionReference, java.util.List<com.ezclassify.rest.contract.CrosswalkTarget>, com.ezclassify.rest.contract.CrosswalkDisposition, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+  public final boolean equals(java.lang.Object);
+  public final int hashCode();
+  public final java.lang.String toString();
+  public java.lang.String authority();
+  public java.lang.String citation();
+  public java.lang.String guidance();
+  public java.lang.String id();
+  public java.lang.String reason();
+  public java.util.List<com.ezclassify.rest.contract.CrosswalkTarget> targets();
+  public static final java.lang.String JSON_FIELD_AUTHORITY = "authority";
+  public static final java.lang.String JSON_FIELD_CITATION = "citation";
+  public static final java.lang.String JSON_FIELD_DISPOSITION = "disposition";
+  public static final java.lang.String JSON_FIELD_GUIDANCE = "guidance";
+  public static final java.lang.String JSON_FIELD_ID = "id";
+  public static final java.lang.String JSON_FIELD_REASON = "reason";
+  public static final java.lang.String JSON_FIELD_SOURCE = "source";
+  public static final java.lang.String JSON_FIELD_TARGETS = "targets";
+}
 public final class com.ezclassify.rest.contract.CrosswalkMappingForbidMatch extends java.lang.Record {
   public com.ezclassify.rest.contract.AssertionReference source();
   public com.ezclassify.rest.contract.CrosswalkMappingForbidMatch(java.lang.String, java.lang.String, com.ezclassify.rest.contract.AssertionReference, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
@@ -1655,6 +1742,18 @@ public final class com.ezclassify.rest.contract.CrosswalkOutcome$Disposition$Val
   public static final com.ezclassify.rest.contract.CrosswalkOutcome$Disposition$Value UNKNOWN;
   public static final com.ezclassify.rest.contract.CrosswalkOutcome$Disposition$Value UNMAPPED;
 }
+public final class com.ezclassify.rest.contract.CrosswalkSelectionCondition extends java.lang.Record {
+  public com.ezclassify.rest.contract.CrosswalkSelectionCondition(java.util.List<com.ezclassify.rest.contract.AssertionReference>, java.util.List<com.ezclassify.rest.contract.AssertionReference>, java.util.List<com.ezclassify.rest.contract.AssertionReference>);
+  public final boolean equals(java.lang.Object);
+  public final int hashCode();
+  public final java.lang.String toString();
+  public java.util.List<com.ezclassify.rest.contract.AssertionReference> all();
+  public java.util.List<com.ezclassify.rest.contract.AssertionReference> any();
+  public java.util.List<com.ezclassify.rest.contract.AssertionReference> none();
+  public static final java.lang.String JSON_FIELD_ALL = "all";
+  public static final java.lang.String JSON_FIELD_ANY = "any";
+  public static final java.lang.String JSON_FIELD_NONE = "none";
+}
 public final class com.ezclassify.rest.contract.CrosswalkSelectionForbidMatch extends java.lang.Record {
   public com.ezclassify.rest.contract.CrosswalkSelectionForbidMatch(java.lang.String, java.lang.String, java.lang.String, java.util.List<com.ezclassify.rest.contract.AssertionReference>, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
   public final boolean equals(java.lang.Object);
@@ -1698,6 +1797,20 @@ public final class com.ezclassify.rest.contract.CrosswalkSelectionOutcome extend
   public static final java.lang.String JSON_FIELD_REASON = "reason";
   public static final java.lang.String JSON_FIELD_SELECTION_ID = "selectionId";
   public static final java.lang.String JSON_FIELD_TARGETS = "targets";
+}
+public final class com.ezclassify.rest.contract.CrosswalkSelectionStrategy extends com.ezclassify.rest.contract.ExpandableStringEnum<com.ezclassify.rest.contract.CrosswalkSelectionStrategy$Value> {
+  public static com.ezclassify.rest.contract.CrosswalkSelectionStrategy fromString(java.lang.String);
+  public static com.ezclassify.rest.contract.CrosswalkSelectionStrategy fromWire(java.lang.String);
+  public static final com.ezclassify.rest.contract.CrosswalkSelectionStrategy FIRST_MATCH;
+  public static final com.ezclassify.rest.contract.CrosswalkSelectionStrategy MOST_MATCHES;
+  public static java.util.List<com.ezclassify.rest.contract.CrosswalkSelectionStrategy> values();
+}
+public final class com.ezclassify.rest.contract.CrosswalkSelectionStrategy$Value extends java.lang.Enum<com.ezclassify.rest.contract.CrosswalkSelectionStrategy$Value> {
+  public static com.ezclassify.rest.contract.CrosswalkSelectionStrategy$Value valueOf(java.lang.String);
+  public static com.ezclassify.rest.contract.CrosswalkSelectionStrategy$Value[] values();
+  public static final com.ezclassify.rest.contract.CrosswalkSelectionStrategy$Value FIRST_MATCH;
+  public static final com.ezclassify.rest.contract.CrosswalkSelectionStrategy$Value MOST_MATCHES;
+  public static final com.ezclassify.rest.contract.CrosswalkSelectionStrategy$Value UNKNOWN;
 }
 public final class com.ezclassify.rest.contract.CrosswalkTarget extends java.lang.Record {
   public com.ezclassify.rest.contract.CrosswalkTarget(java.lang.String, java.lang.String, java.lang.String, java.lang.Boolean);
@@ -1760,6 +1873,14 @@ public final class com.ezclassify.rest.contract.CtxComponentDescriptor extends j
   public static final java.lang.String JSON_FIELD_LAYERS = "layers";
   public static final java.lang.String JSON_FIELD_RESOLVED_VERSION = "resolvedVersion";
   public static final java.lang.String JSON_FIELD_VERSION = "version";
+}
+public final class com.ezclassify.rest.contract.CtxCrosswalkDescribeResponseBody extends java.lang.Record {
+  public com.ezclassify.rest.contract.CtxCrosswalkDescribeResponseBody(java.util.List<com.ezclassify.rest.contract.ContextCrosswalkDescriptor>);
+  public final boolean equals(java.lang.Object);
+  public final int hashCode();
+  public final java.lang.String toString();
+  public java.util.List<com.ezclassify.rest.contract.ContextCrosswalkDescriptor> crosswalks();
+  public static final java.lang.String JSON_FIELD_CROSSWALKS = "crosswalks";
 }
 public final class com.ezclassify.rest.contract.CtxDescribeResponseBody extends java.lang.Record {
   public com.ezclassify.rest.contract.CtxComponentDescriptor access();
@@ -2489,6 +2610,16 @@ public final class com.ezclassify.rest.contract.GuideRuleOutcome extends java.la
   public java.util.List<com.ezclassify.rest.contract.ConceptRef> concepts();
   public static final java.lang.String JSON_FIELD_CONCEPTS = "concepts";
   public static final java.lang.String JSON_FIELD_RENDERED = "rendered";
+}
+public final class com.ezclassify.rest.contract.GuideRuleSelection extends java.lang.Record {
+  public com.ezclassify.rest.contract.GuideRuleSelection(java.lang.String, java.lang.String);
+  public final boolean equals(java.lang.Object);
+  public final int hashCode();
+  public final java.lang.String toString();
+  public java.lang.String guideId();
+  public java.lang.String ruleId();
+  public static final java.lang.String JSON_FIELD_GUIDE_ID = "guideId";
+  public static final java.lang.String JSON_FIELD_RULE_ID = "ruleId";
 }
 public final class com.ezclassify.rest.contract.GuideRuleView extends java.lang.Record {
   public boolean isComputed();

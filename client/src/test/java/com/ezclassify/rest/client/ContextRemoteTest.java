@@ -12,6 +12,7 @@ import com.ezclassify.rest.contract.CheckCoverageResult;
 import com.ezclassify.rest.contract.ConceptDescription;
 import com.ezclassify.rest.contract.ConceptNoticeType;
 import com.ezclassify.rest.contract.ConceptView;
+import com.ezclassify.rest.contract.ContextCrosswalkDescriptor;
 import com.ezclassify.rest.contract.ContextCrosswalkTranslationResult;
 import com.ezclassify.rest.contract.ContextDocumentAuditResult;
 import com.ezclassify.rest.contract.DiffResult;
@@ -23,6 +24,7 @@ import com.ezclassify.rest.contract.ExplanationTrace;
 import com.ezclassify.rest.contract.FilterResult;
 import com.ezclassify.rest.contract.FixAction;
 import com.ezclassify.rest.contract.GuideBreakdownEntry;
+import com.ezclassify.rest.contract.GuideRuleSelection;
 import com.ezclassify.rest.contract.GuideScanResult;
 import com.ezclassify.rest.contract.GuideViewResponse;
 import com.ezclassify.rest.contract.Notice;
@@ -212,6 +214,9 @@ class ContextRemoteTest {
     ROUTES.put(
         "/access/rules",
         "{\"rules\":[{\"rule\":{\"artifact\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"ruleId\":\"r1\",\"ruleDigest\":\"sha256:r1\"},\"access\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"scheme\":{\"kind\":\"scheme\",\"id\":\"s\",\"version\":\"1.0.0\",\"digest\":\"sha256:scheme\"},\"name\":\"ORG\",\"requirementText\":\"Org members only\",\"attributesNeeded\":[\"membership\"],\"dependsOn\":[],\"overrides\":[],\"lines\":[]}]}");
+    ROUTES.put(
+        "/crosswalk/describe",
+        "{\"crosswalks\":[{\"id\":\"a-to-b\",\"version\":\"1.0.0\",\"name\":\"A to B\",\"source\":\"a\",\"target\":\"b\",\"mappings\":[{\"id\":\"open\",\"source\":{\"categoryId\":\"level\",\"conceptId\":\"OPEN\"},\"targets\":[{\"categoryId\":\"level\",\"conceptId\":\"GREEN\"}],\"disposition\":\"carry\",\"reason\":\"Equivalent.\"}],\"selections\":[]}]}");
     ROUTES.put(
         "/crosswalk/translate",
         "{\"crosswalk\":{\"kind\":\"crosswalk\",\"id\":\"state-to-district\",\"version\":\"1.0.0\",\"digest\":\"sha256:crosswalk\"},\"sourceScheme\":{\"kind\":\"scheme\",\"id\":\"state\",\"version\":\"1.0.0\",\"digest\":\"sha256:state\"},\"targetScheme\":{\"kind\":\"scheme\",\"id\":\"district\",\"version\":\"1.0.0\",\"digest\":\"sha256:district\"},\"source\":{\"valid\":true,\"inputWasValid\":true,\"rendered\":\"H\",\"assertions\":[],\"errors\":[],\"warnings\":[],\"appliedFixes\":[],\"assessment\":{\"emitted\":[],\"omitted\":[],\"collapsed\":[],\"conflicts\":[],\"unrepresentable\":[]},\"notices\":[]},\"outcomes\":[],\"selections\":[],\"target\":{\"valid\":true,\"inputWasValid\":false,\"rendered\":\"D-H\",\"assertions\":[],\"errors\":[],\"warnings\":[],\"appliedFixes\":[],\"assessment\":{\"emitted\":[],\"omitted\":[],\"collapsed\":[],\"conflicts\":[],\"unrepresentable\":[]},\"notices\":[]},\"status\":\"complete\"}");
@@ -1190,12 +1195,20 @@ class ContextRemoteTest {
 
   @Test
   void guideEvaluateMany() {
-    EvaluationResult e = connect().guide().evaluateMany("r1").result();
+    EvaluationResult e =
+        connect()
+            .guide()
+            .evaluateMany(new GuideRuleSelection("g1", "r1"), new GuideRuleSelection("g2", "r1"))
+            .result();
     assertEquals("H", e.aggregatedMarking());
     assertEquals("/v1/ctx/acme-ctx/1.0.0/guide/evaluate", lastPath);
-    assertTrue(lastBody.contains("\"allGuides\":true"));
-    assertTrue(lastBody.contains("\"selectedRuleIds\":[\"r1\"]"));
-    assertFalse(lastBody.contains("guideId"));
+    assertTrue(
+        lastBody.contains(
+            "\"selections\":[{\"guideId\":\"g1\",\"ruleId\":\"r1\"},"
+                + "{\"guideId\":\"g2\",\"ruleId\":\"r1\"}]"),
+        lastBody);
+    assertFalse(lastBody.contains("selectedRuleIds"));
+    assertFalse(lastBody.contains("allGuides"));
   }
 
   /** breakdown and contributingBreakdown carry the entries the server returned. */
@@ -1375,6 +1388,18 @@ class ContextRemoteTest {
   }
 
   @Test
+  void describeCrosswalksReadsTheFlatInventory() {
+    List<ContextCrosswalkDescriptor> crosswalks = connect().describeCrosswalks();
+    assertEquals("/v1/ctx/acme-ctx/1.0.0/crosswalk/describe", lastPath);
+    assertEquals(1, crosswalks.size());
+    ContextCrosswalkDescriptor crosswalk = crosswalks.get(0);
+    assertEquals("a-to-b", crosswalk.id());
+    assertEquals("a", crosswalk.source());
+    assertEquals("b", crosswalk.target());
+    assertEquals("open", crosswalk.mappings().get(0).id());
+  }
+
+  @Test
   void accessListsRulesAndDerivesIds() {
     List<AccessRuleDescription> rules = connect().access().rules();
     assertEquals(1, rules.size());
@@ -1513,11 +1538,13 @@ class ContextRemoteTest {
 
   /**
    * What the stub answers for {@code route}: the canned result in its Context envelope, except for
-   * the two routes whose answer is not enveloped.
+   * the three routes whose answer is not enveloped.
    */
   private static String served(String route) {
     String result = ROUTES.get(route);
-    if (route.equals("/access/rules") || route.equals("/scheme/concepts")) return result;
+    if (route.equals("/access/rules")
+        || route.equals("/crosswalk/describe")
+        || route.equals("/scheme/concepts")) return result;
     return contextEnvelope(result, route.startsWith("/document/"));
   }
 

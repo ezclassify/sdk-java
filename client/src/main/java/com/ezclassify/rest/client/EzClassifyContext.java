@@ -2,6 +2,7 @@ package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.AccessRuleDescription;
 import com.ezclassify.rest.contract.AssessmentLimitation;
+import com.ezclassify.rest.contract.ContextCrosswalkDescriptor;
 import com.ezclassify.rest.contract.ContextOperationResult;
 import com.ezclassify.rest.contract.ContextResolution;
 import com.ezclassify.rest.contract.CtxComponentDescriptor;
@@ -308,6 +309,49 @@ public final class EzClassifyContext {
     }
   }
 
+  /**
+   * Every crosswalk this Context holds, in declaration order, empty when it declares none. Each one
+   * names its source and target by the scheme selectors {@link #describeContext()} lists under
+   * {@code schemes}, and carries the mappings and selections a translation applies.
+   *
+   * <p>The inventory goes through the response cache like the access rule list: an hour on an
+   * unpinned binding, and for the handle's life under a concrete version.
+   *
+   * @return every crosswalk in the Context
+   * @throws EzClassifyClientException if the server refuses the request, cannot be reached, or
+   *     answers an inventory missing a required member
+   */
+  public List<ContextCrosswalkDescriptor> describeCrosswalks() {
+    if (cacheOptions.disableCache()) {
+      return parseCrosswalks(sendCtx("GET", "crosswalk/describe", null));
+    }
+    String key = cacheKey("GET", "crosswalk/describe", null);
+    String response =
+        responseCache.get(
+            key,
+            ttlNanos("crosswalk/describe"),
+            () -> {
+              String raw = sendCtx("GET", "crosswalk/describe", null, key);
+              parseCrosswalks(raw);
+              return raw;
+            });
+    return parseCrosswalks(response);
+  }
+
+  private static List<ContextCrosswalkDescriptor> parseCrosswalks(String raw) {
+    JsonObject response = Json.parseObject(raw);
+    if (!response.has("crosswalks") || !response.get("crosswalks").isJsonArray()) {
+      throw new MalformedResponseException(
+          "Context crosswalk/describe response is missing required crosswalks array");
+    }
+    try {
+      return List.copyOf(
+          WireJson.listFromTree(response.get("crosswalks"), ContextCrosswalkDescriptor.class));
+    } catch (JsonParseException e) {
+      throw malformed(e);
+    }
+  }
+
   private CtxDescribeResponseBody fetchDescription() {
     CtxDescribeResponseBody fetched = parseDescription(sendCtx("GET", "", null));
     description = fetched;
@@ -502,7 +546,9 @@ public final class EzClassifyContext {
   private long ttlNanos(String op) {
     if (pinned()) return Long.MAX_VALUE;
     if ("scheme/scan".equals(op)) return Duration.ofMinutes(2).toNanos();
-    if ("scheme/describe-concept".equals(op) || "access/rules".equals(op)) {
+    if ("scheme/describe-concept".equals(op)
+        || "access/rules".equals(op)
+        || "crosswalk/describe".equals(op)) {
       return Duration.ofHours(1).toNanos();
     }
     return Duration.ofMinutes(5).toNanos();

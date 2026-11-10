@@ -39,9 +39,9 @@ class WireCorpusTest {
   void exactLiteralCoverage() throws Exception {
     var corpus = corpus();
     corpus.requireIds(WireCaseDrivers.DRIVERS.keySet());
-    assertEquals(118, corpus.cases.size());
+    assertEquals(119, corpus.cases.size());
     assertEquals(
-        81,
+        82,
         WireCaseDrivers.DRIVERS.values().stream()
             .filter(v -> v == WireCaseDrivers.Boundary.PUBLIC)
             .count());
@@ -180,6 +180,9 @@ class WireCorpusTest {
           assertEquals(c.responseBody(), WireJson.toTree(value), c.id());
         } else if (c.target().endsWith("/access/rules")) {
           subset(c.responseBody().getAsJsonObject().get("rules"), WireJson.toTree(value), c.id());
+        } else if (c.target().endsWith("/crosswalk/describe")) {
+          subset(
+              c.responseBody().getAsJsonObject().get("crosswalks"), WireJson.toTree(value), c.id());
         } else {
           assertNotNull(value, c.id());
           subset(c.responseBody(), WireJson.toTree(value), c.id());

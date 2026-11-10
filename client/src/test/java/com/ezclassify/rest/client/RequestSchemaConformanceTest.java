@@ -10,6 +10,7 @@ import com.ezclassify.rest.contract.DocumentResponseProfile;
 import com.ezclassify.rest.contract.GuideDeterminationInput;
 import com.ezclassify.rest.contract.GuideFindingDecision;
 import com.ezclassify.rest.contract.GuideFindingDetermination;
+import com.ezclassify.rest.contract.GuideRuleSelection;
 import com.ezclassify.rest.contract.ProcessingContext;
 import com.ezclassify.rest.contract.ProcessingRole;
 import com.ezclassify.rest.contract.RenderPreservation;
@@ -258,7 +259,10 @@ class RequestSchemaConformanceTest {
         new Case("scheme/apply-preset", x -> x.scheme().applyPreset("default-label", "banner")));
     c.put("guide.scan", new Case("guide/scan", x -> x.guide().scan("secret text", "g1")));
     c.put("guide.evaluate", new Case("guide/evaluate", x -> x.guide().evaluate("g1", "r1")));
-    c.put("guide.evaluateMany", new Case("guide/evaluate", x -> x.guide().evaluateMany("r1")));
+    c.put(
+        "guide.evaluateMany",
+        new Case(
+            "guide/evaluate", x -> x.guide().evaluateMany(new GuideRuleSelection("g1", "r1"))));
     c.put(
         "guide.filter-rules",
         new Case("guide/filter-rules", x -> x.guide().filterRules("sec", "g1")));
@@ -505,6 +509,9 @@ class RequestSchemaConformanceTest {
     c.put(
         "access.rules",
         new GetCase(CTX_PREFIX + "access/rules", url -> context(url).access().rules()));
+    c.put(
+        "crosswalk.describe",
+        new GetCase(CTX_PREFIX + "crosswalk/describe", url -> context(url).describeCrosswalks()));
     return c;
   }
 

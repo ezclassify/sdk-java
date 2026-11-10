@@ -2,6 +2,7 @@ package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.Assertion;
 import com.ezclassify.rest.contract.DocumentResponseProfile;
+import com.ezclassify.rest.contract.GuideRuleSelection;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.lang.reflect.InvocationTargetException;
@@ -92,12 +93,13 @@ final class WireCaseDrivers {
           Map.entry("ctx-access-rules.no-policy", Boundary.PUBLIC),
           Map.entry("ctx-guide-scan.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-evaluate.ok", Boundary.PUBLIC),
-          Map.entry("ctx-guide-evaluate.all-guides", Boundary.PUBLIC),
+          Map.entry("ctx-guide-evaluate.selections", Boundary.PUBLIC),
           Map.entry("ctx-guide-describe-rule.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-describe-rule.unknown-guide", Boundary.PUBLIC),
           Map.entry("ctx-guide-view.by-id", Boundary.PUBLIC),
           Map.entry("ctx-guide-filter-rules.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-view.ok", Boundary.PUBLIC),
+          Map.entry("ctx-crosswalk-describe.ok", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-translate.marking", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-translate.assertions", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-translate.translated", Boundary.PUBLIC),
@@ -249,6 +251,7 @@ final class WireCaseDrivers {
         default -> {}
       }
       if (op.equals("access/rules")) return ctx.access().rules();
+      if (op.equals("crosswalk/describe")) return ctx.describeCrosswalks();
       if (op.startsWith("scheme/describe-concept?")) {
         // These two recorded values are literal non-encoded ASCII ids; request matching stays raw.
         Map<String, String> query = new java.util.HashMap<>();
@@ -317,8 +320,8 @@ final class WireCaseDrivers {
           ctx.access().describeRequirements(text(body, "marking"));
       case "guide/scan" -> ctx.guide().scan(text(body, "text"));
       case "guide/evaluate" ->
-          body.has("allGuides")
-              ? ctx.guide().evaluateMany(strings(body, "selectedRuleIds").toArray(String[]::new))
+          body.has("selections")
+              ? ctx.guide().evaluateMany(selections(body))
               : ctx.guide()
                   .evaluate(
                       text(body, "guideId"),
@@ -399,6 +402,15 @@ final class WireCaseDrivers {
 
   private static String context(JsonObject body) {
     return body.has("context") ? body.get("context").toString() : null;
+  }
+
+  private static GuideRuleSelection[] selections(JsonObject body) {
+    List<GuideRuleSelection> selections = new ArrayList<>();
+    for (JsonElement entry : body.getAsJsonArray("selections")) {
+      JsonObject selection = entry.getAsJsonObject();
+      selections.add(new GuideRuleSelection(text(selection, "guideId"), text(selection, "ruleId")));
+    }
+    return selections.toArray(GuideRuleSelection[]::new);
   }
 
   private static List<String> strings(JsonObject body, String name) {
