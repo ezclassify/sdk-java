@@ -234,7 +234,7 @@ final class WireCaseDrivers {
     String route = queryStart < 0 ? op : op.substring(0, queryStart);
     Map<String, String> query = queryStart < 0 ? Map.of() : query(op.substring(queryStart + 1));
     ContextScheme s =
-        query.containsKey("scheme") ? ctx.schemeView(query.get("scheme")) : ctx.scheme();
+        query.containsKey("scheme") ? ctx.schemes().get(query.get("scheme")) : ctx.scheme();
     if ("GET".equals(c.method())) {
       if (route.isEmpty()) return ctx.describeContext();
       switch (route) {

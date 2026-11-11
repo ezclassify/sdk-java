@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -36,15 +35,15 @@ import java.util.function.Function;
  *
  * <p>Obtain one with {@link EzClassifyClient#connect(String, String, String)}, then reach the
  * operations through {@link #scheme()}, {@link #guide()}, {@link #access()}, {@link #crosswalk()},
- * and {@link #document()}. Another scheme the Context holds is reached through {@link
- * #schemeView(String)}:
+ * and {@link #document()}. Another scheme the Context holds is reached by its key through {@link
+ * #schemes()}:
  *
  * <pre>{@code
  * EzClassifyContext ctx = EzClassifyClient.connect("http://localhost:8080", "my-ctx", "1.0");
  * var response = ctx.scheme().process("MARKING");
  * ProcessResult r = response.result();
  * String resolved = ctx.resolvedVersion(); // concrete version the server resolved
- * var source = ctx.schemeView("source").validate("MARKING"); // a second scheme the Context holds
+ * var source = ctx.schemes().get("source").validate("MARKING"); // another scheme it holds
  * }</pre>
  */
 public final class EzClassifyContext {
@@ -97,7 +96,7 @@ public final class EzClassifyContext {
   private final Duration requestTimeout;
   private final Object describeLock = new Object();
   private final ContextScheme primaryScheme = new ContextScheme(this, null);
-  private final ConcurrentHashMap<String, ContextScheme> schemeViews = new ConcurrentHashMap<>();
+  private final ContextSchemes schemes = new ContextSchemes(this);
   private volatile String resolvedVersion;
   private volatile CtxDescribeResponseBody description;
 
@@ -234,22 +233,13 @@ public final class EzClassifyContext {
   }
 
   /**
-   * Scheme-domain operations bound to one scheme this Context holds, such as a crosswalk's source
-   * or target. Every operation and read on the view sends {@code selector} as the {@code scheme}
-   * query parameter; the operations take no selector of their own. {@link #describeContext()} lists
-   * the selector of every scheme the Context holds.
+   * The schemes this Context holds, each reached by its key with {@link
+   * ContextSchemes#get(String)}. {@link #describeContext()} lists the key of every one.
    *
-   * <p>The server resolves the selector. One the Context does not hold answers 404 on the first
-   * call and is never answered by the primary scheme instead. Views are held per selector, and each
-   * view's answers are cached apart from every other view's.
-   *
-   * @param selector the Context-local scheme key the Context holds
-   * @return the view of that scheme, the same instance on every call with the same selector
-   * @throws IllegalArgumentException if {@code selector} is null or blank
+   * @return this Context's schemes, the same instance on every call
    */
-  public ContextScheme schemeView(String selector) {
-    Args.requiredId(selector, "selector");
-    return schemeViews.computeIfAbsent(selector, key -> new ContextScheme(this, key));
+  public ContextSchemes schemes() {
+    return schemes;
   }
 
   /**

@@ -138,7 +138,7 @@ class ContextSchemeResourceTest {
   void aSchemeViewSendsItsSelectorAsTheOnlyQueryParameterEncoded(String name, Read read)
       throws Exception {
     try (ClientStubServer stub = stub()) {
-      assertNotNull(read.call().apply(context(stub).schemeView("src/a")));
+      assertNotNull(read.call().apply(context(stub).schemes().get("src/a")));
       assertEquals("scheme=src%2Fa", stub.lastRequest().query(), name);
       assertEquals(PREFIX + "/" + read.route(), stub.lastRequest().path(), name);
     }
@@ -296,7 +296,7 @@ class ContextSchemeResourceTest {
           PREFIX + "/scheme/formats", "{\"error\":\"scheme_not_found\",\"code\":\"NOT_FOUND\"}");
       EzClassifyClientException error =
           assertThrows(
-              EzClassifyClientException.class, () -> context(stub).schemeView("nope").formats());
+              EzClassifyClientException.class, () -> context(stub).schemes().get("nope").formats());
       assertEquals(404, error.statusCode());
       assertEquals("NOT_FOUND", error.code());
       assertEquals(1, stub.requestCount());

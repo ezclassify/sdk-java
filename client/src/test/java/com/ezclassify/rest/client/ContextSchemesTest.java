@@ -22,12 +22,11 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * The per-scheme view of a Context: {@link EzClassifyContext#schemeView(String)} addresses a scheme
- * the Context holds by its selector, sends that selector as {@code ?scheme=} on every scheme
- * operation, keeps its answers apart from every other view's, and never lets the primary scheme
- * answer for a selector the server refuses.
+ * The schemes of a Context: {@link ContextSchemes#get(String)} addresses a scheme the Context holds
+ * by its key, sends that key as {@code ?scheme=} on every scheme operation, keeps its answers apart
+ * from every other view's, and never lets the primary scheme answer for a key the server refuses.
  */
-class ContextSchemeViewTest {
+class ContextSchemesTest {
   private static final String PREFIX = "/v1/ctx/district/1.0.0";
 
   private static final String RESOLUTION =
@@ -102,7 +101,7 @@ class ContextSchemeViewTest {
   @MethodSource("operations")
   void aSchemeViewSendsItsSelectorOnEveryOperation(String route, Operation op) throws Exception {
     try (ClientStubServer stub = stub()) {
-      ContextScheme view = context(stub).schemeView("src/a");
+      ContextScheme view = context(stub).schemes().get("src/a");
       assertThrows(EzClassifyClientException.class, () -> op.call().accept(view), route);
       assertEquals(PREFIX + "/" + route, stub.lastRequest().path(), route);
       assertEquals(
@@ -127,32 +126,55 @@ class ContextSchemeViewTest {
   @Test
   void aRouteThatCarriesItsOwnQueryKeepsItAndAddsTheSelector() throws Exception {
     try (ClientStubServer stub = stub()) {
-      ContextScheme view = context(stub).schemeView("target");
+      ContextScheme view = context(stub).schemes().get("target");
       assertThrows(EzClassifyClientException.class, () -> view.describeConcept("H", "level"));
       assertEquals(Set.of("conceptId=H", "categoryId=level", "scheme=target"), queryOf(stub));
     }
   }
 
   @Test
-  void viewsAreHeldPerSelector() throws Exception {
+  void viewsAreHeldPerKey() throws Exception {
     try (ClientStubServer stub = stub()) {
       EzClassifyContext context = context(stub);
       assertSame(context.scheme(), context.scheme());
-      assertSame(context.schemeView("source"), context.schemeView("source"));
-      assertNotSame(context.schemeView("source"), context.schemeView("target"));
-      assertNotSame(context.scheme(), context.schemeView("source"));
+      assertSame(context.schemes(), context.schemes());
+      assertSame(context.schemes().get("source"), context.schemes().get("source"));
+      assertNotSame(context.schemes().get("source"), context.schemes().get("target"));
+      assertNotSame(context.scheme(), context.schemes().get("source"));
       assertEquals(0, stub.requestCount(), "a view is a binding, not a request");
     }
   }
 
   @Test
-  void aMissingOrBlankSelectorIsRefusedBeforeAnyRequestIsSent() throws Exception {
+  void aMissingOrBlankKeyIsRefusedBeforeAnyRequestIsSent() throws Exception {
     try (ClientStubServer stub = stub()) {
       EzClassifyContext context = context(stub);
-      for (String selector : new String[] {null, "", "  "}) {
-        assertThrows(IllegalArgumentException.class, () -> context.schemeView(selector));
+      for (String key : new String[] {null, "", "  "}) {
+        assertThrows(IllegalArgumentException.class, () -> context.schemes().get(key));
       }
       assertEquals(0, stub.requestCount());
+    }
+  }
+
+  @Test
+  void theServerIsTheOnlyAuthorityOnWhichKeysExist() throws Exception {
+    try (ClientStubServer stub = stub()) {
+      stub.setStatus(PREFIX + "/scheme/process", 404);
+      stub.setResponse(
+          PREFIX + "/scheme/process",
+          "{\"error\":\"scheme not found\",\"code\":\"scheme_not_found\"}");
+
+      // An artifact id is not a key. The client neither translates it nor refuses it from a list
+      // of its own: it goes out as written, on the only request made, and the server answers.
+      ContextScheme view =
+          new EzClassifyContext(stub.url(), "district", "1.0.0", null).schemes().get("cvss@3.1.0");
+      EzClassifyClientException refused =
+          assertThrows(EzClassifyClientException.class, () -> view.process("H"));
+
+      assertEquals(404, refused.statusCode());
+      assertEquals("scheme_not_found", refused.code());
+      assertEquals("scheme=cvss%403.1.0", stub.lastRequest().query());
+      assertEquals(1, stub.requestCount(), "no description is read to vet the key");
     }
   }
 
@@ -164,21 +186,21 @@ class ContextSchemeViewTest {
 
       context.scheme().process("H");
       assertNull(stub.lastRequest().query());
-      context.schemeView("source").process("H");
+      context.schemes().get("source").process("H");
       assertEquals("scheme=source", stub.lastRequest().query());
-      context.schemeView("target").process("H");
+      context.schemes().get("target").process("H");
       assertEquals("scheme=target", stub.lastRequest().query());
       assertEquals(3, stub.requestCount(), "one request per view for the same input");
 
       context.scheme().process("H");
-      context.schemeView("source").process("H");
-      context.schemeView("target").process("H");
+      context.schemes().get("source").process("H");
+      context.schemes().get("target").process("H");
       assertEquals(3, stub.requestCount(), "each view answers its repeat from its own entry");
     }
   }
 
   @Test
-  void aSelectorTheServerRefusesIsNeverAnsweredByThePrimaryScheme() throws Exception {
+  void aKeyTheServerRefusesIsNeverAnsweredByThePrimaryScheme() throws Exception {
     try (ClientStubServer stub = stub()) {
       stub.setResponse(PREFIX + "/scheme/process", PROCESS_ENVELOPE);
       EzClassifyContext context = context(stub);
@@ -190,13 +212,14 @@ class ContextSchemeViewTest {
           PREFIX + "/scheme/process", "{\"error\":\"scheme_not_found\",\"code\":\"NOT_FOUND\"}");
       EzClassifyClientException refused =
           assertThrows(
-              EzClassifyClientException.class, () -> context.schemeView("nope").process("H"));
+              EzClassifyClientException.class, () -> context.schemes().get("nope").process("H"));
       assertEquals(404, refused.statusCode());
       assertEquals("scheme=nope", stub.lastRequest().query());
       assertEquals(2, stub.requestCount());
 
       // The refusal is not kept, and it names a missing scheme, so the primary's entry stands.
-      assertThrows(EzClassifyClientException.class, () -> context.schemeView("nope").process("H"));
+      assertThrows(
+          EzClassifyClientException.class, () -> context.schemes().get("nope").process("H"));
       assertEquals(3, stub.requestCount());
       context.scheme().process("H");
       assertEquals(3, stub.requestCount());
