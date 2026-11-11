@@ -113,6 +113,9 @@ public final class com.ezclassify.rest.client.ContextScheme {
   public java.util.List<com.ezclassify.rest.contract.LabelPresetView> labelPresets();
   public java.util.List<com.ezclassify.rest.contract.SchemeScope> scopes();
 }
+public final class com.ezclassify.rest.client.ContextSchemes {
+  public com.ezclassify.rest.client.ContextScheme get(java.lang.String);
+}
 public final class com.ezclassify.rest.client.ExplainOptions extends java.lang.Record {
   public com.ezclassify.rest.client.ExplainOptions(java.lang.String, java.lang.String, java.lang.String, java.util.List<com.ezclassify.rest.contract.Assertion>, com.ezclassify.rest.contract.ProcessingContext, java.util.List<java.lang.String>);
   public com.ezclassify.rest.contract.ProcessingContext context();
@@ -166,7 +169,7 @@ public final class com.ezclassify.rest.client.EzClassifyContext {
   public com.ezclassify.rest.client.ContextDocument document();
   public com.ezclassify.rest.client.ContextGuide guide();
   public com.ezclassify.rest.client.ContextScheme scheme();
-  public com.ezclassify.rest.client.ContextScheme schemeView(java.lang.String);
+  public com.ezclassify.rest.client.ContextSchemes schemes();
   public com.ezclassify.rest.contract.CtxDescribeResponseBody describeContext();
   public java.lang.String contextId();
   public java.lang.String resolvedVersion();

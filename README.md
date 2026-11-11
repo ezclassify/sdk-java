@@ -175,16 +175,16 @@ A preset is listed by name and scope only; `applyPreset` is the way to expand on
 
 ### Another scheme in the Context
 
-A Context can hold more than one scheme, such as the two sides of a crosswalk. `context.scheme()` is the primary scheme. `context.schemeView(selector)` is any other one, named by its Context-local key; `context.describeContext().schemes()` lists the selectors. The view has every operation and read `scheme()` has, and none of them take a selector: the view sends it as `?scheme=` on every request.
+A Context can hold more than one scheme, such as the two sides of a crosswalk. `context.scheme()` is the primary scheme. `context.schemes().get(key)` returns the view of any scheme the Context holds, named by its Context-local key; `context.describeContext().schemes()` lists those keys as each descriptor's `selector()`. The view has every operation and read `scheme()` has, and none of them take a key: the view sends it as `?scheme=` on every request.
 
 ```java
-ContextScheme source = context.schemeView("source");
+ContextScheme source = context.schemes().get("source");
 
 var checked = source.validate("MARKING");
 List<CategoryView> categories = source.categories();
 ```
 
-A selector the Context does not hold is a 404 on the first call. It is never answered by the primary scheme. The handle keeps one view per selector, and each view's answers are cached on their own.
+The server decides which keys exist. A key the Context does not hold is a 404 `scheme_not_found` on the first call, and it is never answered by the primary scheme. `schemes()` keeps one view per key, and each view's answers are cached on their own.
 
 ## Response caching
 
