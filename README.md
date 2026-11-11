@@ -188,7 +188,7 @@ The server decides which keys exist. A key the Context does not hold is a 404 `s
 
 ## Response caching
 
-A Context handle answers a repeated identical question from memory. These operations are cached: `process`, `validate`, `explain`, `normalize`, `render`, `diff`, `aggregate`, `aggregateAssertions`, `applyPreset`, `suggest`, `suggestForCategories`, `scan`, `describeConcept`, `access().rules()`, and `describeCrosswalks()`. Every other operation reaches the server on every call.
+A Context handle answers a repeated identical question from memory. These operations are cached: `process`, `validate`, `explain`, `normalize`, `render`, `diff`, `aggregate`, `aggregateAssertions`, `applyPreset`, `suggest`, `suggestForCategories`, `scan`, `describeConcept`, `access().rules()`, `access().marking()`, and `describeCrosswalks()`. Every other operation reaches the server on every call.
 
 - **Keys.** The scheme view and every field of the request are part of the key, so two `process` calls that name different `outputs` or `suggestFor` are two entries, and `explain` never answers from a `process` entry for the same input. Member order and members left unset do not change the key.
 - **Concurrent calls.** Identical calls made while one is in flight share that one HTTP request. A request that runs longer than its lifetime stays joinable.

@@ -2,6 +2,7 @@ package com.ezclassify.rest.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -144,6 +145,61 @@ class ContextCacheTest {
         var later = context.access().rules();
         assertEquals("agency", later.get(0).attributesNeeded().get(0));
         assertEquals(2, stub.requestCount());
+      }
+    }
+  }
+
+  @Test
+  void accessMarkingComesFromTheCachedRulesResponse() throws Exception {
+    try (ClientStubServer stub =
+        new ClientStubServer(
+            Map.of(
+                CUI_PREFIX,
+                ClientStubServer.description(CUI_PREFIX),
+                CUI_PREFIX + "/access/rules",
+                "{\"marking\":\"CUI\"," + CUI_ACCESS_RULES.substring(1)),
+            "20260720.0.0")) {
+      try (EzClassifyClient client = stub.newClient()) {
+        EzClassifyContext context = client.context("us-gov-cui", "20260720.0.0");
+        assertEquals("CUI rule", context.access().rules().get(0).name());
+        assertEquals("CUI", context.access().marking());
+        assertEquals(2, stub.requestCount());
+      }
+    }
+  }
+
+  @Test
+  void accessMarkingIsNullForAPolicyThatDeclaresNone() throws Exception {
+    try (ClientStubServer stub =
+        new ClientStubServer(
+            Map.of(
+                CUI_PREFIX,
+                ClientStubServer.description(CUI_PREFIX),
+                CUI_PREFIX + "/access/rules",
+                CUI_ACCESS_RULES),
+            "20260720.0.0")) {
+      try (EzClassifyClient client = stub.newClient()) {
+        assertNull(client.context("us-gov-cui", "20260720.0.0").access().marking());
+      }
+    }
+  }
+
+  @Test
+  void accessMarkingThatIsNotTextIsMalformedAndNotCached() throws Exception {
+    try (ClientStubServer stub =
+        new ClientStubServer(
+            Map.of(
+                CUI_PREFIX,
+                ClientStubServer.description(CUI_PREFIX),
+                CUI_PREFIX + "/access/rules",
+                "{\"marking\":7," + CUI_ACCESS_RULES.substring(1)),
+            "20260720.0.0")) {
+      try (EzClassifyClient client = stub.newClient()) {
+        EzClassifyContext context = client.context("us-gov-cui", "20260720.0.0");
+        assertThrows(MalformedResponseException.class, () -> context.access().marking());
+        stub.setResponse(
+            CUI_PREFIX + "/access/rules", "{\"marking\":\"CUI\"," + CUI_ACCESS_RULES.substring(1));
+        assertEquals("CUI", context.access().marking());
       }
     }
   }

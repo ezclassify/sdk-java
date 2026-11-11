@@ -477,9 +477,13 @@ public final class EzClassifyContext {
         "Context response is malformed: " + cause.getMessage(), cause);
   }
 
-  List<AccessRuleDescription> accessRules() {
+  /** The access policy as {@code access/rules} answers it: its rules and its own marking. */
+  record AccessPolicy(List<AccessRuleDescription> rules, String marking) {}
+
+  /** Read {@code access/rules}, the one cache entry every read of the policy shares. */
+  AccessPolicy accessPolicy() {
     if (cacheOptions.disableCache()) {
-      return parseAccessRules(sendCtx("GET", "access/rules", null));
+      return parseAccessPolicy(sendCtx("GET", "access/rules", null));
     }
     String key = cacheKey("GET", "access/rules", null);
     String response =
@@ -488,20 +492,28 @@ public final class EzClassifyContext {
             ttlNanos("access/rules"),
             () -> {
               String raw = sendCtx("GET", "access/rules", null, key);
-              parseAccessRules(raw);
+              parseAccessPolicy(raw);
               return raw;
             });
-    return parseAccessRules(response);
+    return parseAccessPolicy(response);
   }
 
-  private static List<AccessRuleDescription> parseAccessRules(String raw) {
+  private static AccessPolicy parseAccessPolicy(String raw) {
     JsonObject response = Json.parseObject(raw);
     if (!response.has("rules") || !response.get("rules").isJsonArray()) {
       throw new MalformedResponseException(
           "Context access/rules response is missing required rules array");
     }
+    JsonElement marking = response.get("marking");
+    if (marking != null
+        && !marking.isJsonNull()
+        && !(marking.isJsonPrimitive() && marking.getAsJsonPrimitive().isString())) {
+      throw new MalformedResponseException("Context access/rules response marking is not a string");
+    }
     try {
-      return List.copyOf(WireJson.listFromTree(response.get("rules"), AccessRuleDescription.class));
+      return new AccessPolicy(
+          List.copyOf(WireJson.listFromTree(response.get("rules"), AccessRuleDescription.class)),
+          marking == null || marking.isJsonNull() ? null : marking.getAsString());
     } catch (JsonParseException e) {
       throw malformed(e);
     }

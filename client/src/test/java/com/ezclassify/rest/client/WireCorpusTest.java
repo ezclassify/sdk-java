@@ -2,6 +2,8 @@ package com.ezclassify.rest.client;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.ezclassify.rest.contract.CrosswalkOutcome;
+import com.ezclassify.rest.contract.CrosswalkTranslationResult;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -39,9 +41,9 @@ class WireCorpusTest {
   void exactLiteralCoverage() throws Exception {
     var corpus = corpus();
     corpus.requireIds(WireCaseDrivers.DRIVERS.keySet());
-    assertEquals(123, corpus.cases.size());
+    assertEquals(125, corpus.cases.size());
     assertEquals(
-        86,
+        88,
         WireCaseDrivers.DRIVERS.values().stream()
             .filter(v -> v == WireCaseDrivers.Boundary.PUBLIC)
             .count());
@@ -52,6 +54,24 @@ class WireCorpusTest {
             .filter(e -> e.getValue() == WireCaseDrivers.Boundary.PRIVATE)
             .map(java.util.Map.Entry::getKey)
             .collect(java.util.stream.Collectors.toSet()));
+  }
+
+  @Test
+  void aCandidateThatLostASelectionIsNotSelectedNeverOmit() throws Exception {
+    var recorded = corpus().cases.get("ctx-crosswalk-translate.not-selected");
+    var result =
+        WireJson.fromTree(
+            recorded.responseBody().getAsJsonObject().get("result"),
+            CrosswalkTranslationResult.class);
+    var losing =
+        result.outcomes().stream()
+            .filter(o -> CrosswalkOutcome.Disposition.NOT_SELECTED.equals(o.disposition()))
+            .toList();
+    assertEquals(List.of("handling:open-export"), losing.stream().map(o -> o.mappingId()).toList());
+    assertEquals(List.of(), losing.get(0).targets());
+    assertTrue(
+        result.outcomes().stream()
+            .noneMatch(o -> CrosswalkOutcome.Disposition.OMIT.equals(o.disposition())));
   }
 
   @TestFactory
@@ -181,8 +201,11 @@ class WireCorpusTest {
         } else if (c.target().endsWith("/access/rules")) {
           subset(c.responseBody().getAsJsonObject().get("rules"), WireJson.toTree(value), c.id());
         } else if (c.target().endsWith("/crosswalk/describe")) {
-          subset(
-              c.responseBody().getAsJsonObject().get("crosswalks"), WireJson.toTree(value), c.id());
+          // Typed like the description: every member must survive, including the document's whole.
+          assertEquals(
+              withoutEmptyMembers(c.responseBody().getAsJsonObject().get("crosswalks")),
+              withoutEmptyMembers(WireJson.toTree(value)),
+              c.id());
         } else {
           assertNotNull(value, c.id());
           subset(c.responseBody(), WireJson.toTree(value), c.id());

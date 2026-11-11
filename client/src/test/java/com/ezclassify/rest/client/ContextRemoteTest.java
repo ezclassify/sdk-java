@@ -174,7 +174,7 @@ class ContextRemoteTest {
         "[{\"conceptId\":\"ORG\",\"conceptName\":\"Organization Only\",\"type\":\"handling\",\"text\":\"controlled\",\"required\":true}]");
     ROUTES.put(
         "/scheme/view",
-        "{\"id\":\"s\",\"name\":\"Scheme\",\"description\":\"d\",\"categories\":[{\"id\":\"level\",\"label\":\"Level\",\"items\":[{\"id\":\"H\",\"name\":\"High\","
+        "{\"id\":\"s\",\"name\":\"Scheme\",\"description\":\"d\",\"marking\":\"H\",\"categories\":[{\"id\":\"level\",\"label\":\"Level\",\"items\":[{\"id\":\"H\",\"name\":\"High\","
             + "\"views\":{\"default\":\"H\"},\"aliases\":[],\"categories\":[\"level\"],\"parents\":[],\"position\":2}]}],"
             + "\"uncategorized\":[]}");
     ROUTES.put(
@@ -199,7 +199,7 @@ class ContextRemoteTest {
         "{\"rule\":{\"artifact\":{\"kind\":\"guide\",\"id\":\"g1\",\"version\":\"1.0.0\",\"digest\":\"sha256:g1\"},\"ruleId\":\"r1\",\"ruleDigest\":\"sha256:r1\",\"source\":{\"providerId\":\"guide-fixture-provider\",\"reproducibility\":\"reproducible\",\"snapshotId\":\"snapshot-r1\"}},\"guide\":{\"kind\":\"guide\",\"id\":\"g1\",\"version\":\"1.0.0\",\"digest\":\"sha256:g1\"},\"name\":\"Rule\",\"description\":\"Qualified guide rule\",\"outcomeText\":\"marks H\",\"whenText\":\"r2 is active\",\"isComputed\":false,\"dependsOn\":[{\"artifact\":{\"kind\":\"guide\",\"id\":\"g2\",\"version\":\"1.0.0\",\"digest\":\"sha256:g2\"},\"ruleId\":\"r2\",\"ruleDigest\":\"sha256:r2\",\"source\":{\"providerId\":\"guide-fixture-provider\",\"reproducibility\":\"reproducible\",\"snapshotId\":\"snapshot-r2\"}}],\"overrides\":[{\"artifact\":{\"kind\":\"guide\",\"id\":\"g3\",\"version\":\"1.0.0\",\"digest\":\"sha256:g3\"},\"ruleId\":\"r3\",\"ruleDigest\":\"sha256:r3\",\"source\":{\"providerId\":\"guide-fixture-provider\",\"reproducibility\":\"reproducible\",\"snapshotId\":\"snapshot-r3\"}}],\"lines\":[\"Rule\",\"marks H\"]}");
     ROUTES.put(
         "/guide/view",
-        "{\"id\":\"g1\",\"name\":\"Guide\",\"description\":\"\",\"categories\":[],\"uncategorized\":[{\"id\":\"r1\","
+        "{\"id\":\"g1\",\"name\":\"Guide\",\"description\":\"\",\"marking\":\"H\",\"categories\":[],\"uncategorized\":[{\"id\":\"r1\","
             + "\"name\":\"Rule 1\",\"outcomeText\":\"marks H\",\"isComputed\":false,\"keywords\":[],\"matcherLabels\":[],"
             + "\"dependsOn\":[],\"dependsOnNames\":[],\"overrides\":[],\"overrideNames\":[]}]}");
     ROUTES.put(
@@ -1125,6 +1125,7 @@ class ContextRemoteTest {
   void schemeView() {
     SchemeViewResponse v = connect().scheme().view().result();
     assertEquals("Scheme", v.name());
+    assertEquals("H", v.marking());
     assertEquals(1, v.categories().size());
     assertEquals("Level", v.categories().get(0).label());
     assertEquals(1, v.categories().get(0).items().size());
@@ -1266,6 +1267,7 @@ class ContextRemoteTest {
   void guideView() {
     GuideViewResponse v = connect().guide().view("g1").result();
     assertEquals("Guide", v.name());
+    assertEquals("H", v.marking());
     assertEquals(1, v.uncategorized().size());
     assertEquals("/v1/ctx/acme-ctx/1.0.0/guide/view", lastPath);
   }

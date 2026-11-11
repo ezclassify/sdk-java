@@ -258,7 +258,18 @@ public final class ContextAccess {
    * @return all qualified access rule descriptions
    */
   public List<AccessRuleDescription> rules() {
-    return ctx.accessRules();
+    return ctx.accessPolicy().rules();
+  }
+
+  /**
+   * Return the access policy document's own overall marking, as the document writes it. It is
+   * display text: nothing in the client or the server interprets it. It comes from the same
+   * response as {@link #rules()}, so reading both takes one request.
+   *
+   * @return the policy's marking, or {@code null} when the policy declares none
+   */
+  public String marking() {
+    return ctx.accessPolicy().marking();
   }
 
   /**
