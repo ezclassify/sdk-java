@@ -41,9 +41,9 @@ class WireCorpusTest {
   void exactLiteralCoverage() throws Exception {
     var corpus = corpus();
     corpus.requireIds(WireCaseDrivers.DRIVERS.keySet());
-    assertEquals(125, corpus.cases.size());
+    assertEquals(129, corpus.cases.size());
     assertEquals(
-        88,
+        92,
         WireCaseDrivers.DRIVERS.values().stream()
             .filter(v -> v == WireCaseDrivers.Boundary.PUBLIC)
             .count());
@@ -198,6 +198,8 @@ class WireCorpusTest {
           // A bare resource has no envelope and no Java projection, so the typed answer must carry
           // everything the server sent: a dropped member fails here, not only an invented one.
           assertEquals(c.responseBody(), WireJson.toTree(value), c.id());
+        } else if (c.target().endsWith("/access/rules") && value instanceof String marking) {
+          assertEquals(c.responseBody().getAsJsonObject().get("marking").getAsString(), marking);
         } else if (c.target().endsWith("/access/rules")) {
           subset(c.responseBody().getAsJsonObject().get("rules"), WireJson.toTree(value), c.id());
         } else if (c.target().endsWith("/crosswalk/describe")) {

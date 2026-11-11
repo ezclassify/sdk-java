@@ -28,6 +28,7 @@ final class WireCaseDrivers {
           Map.entry("ctx-document-audit.empty-text", Boundary.PRIVATE),
           Map.entry("ctx-describe.presets", Boundary.PUBLIC),
           Map.entry("ctx-describe.crosswalks", Boundary.PUBLIC),
+          Map.entry("ctx-describe.marked", Boundary.PUBLIC),
           Map.entry("ctx-scheme-summary.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-concepts.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-categories.ok", Boundary.PUBLIC),
@@ -66,6 +67,7 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-render.empty", Boundary.PUBLIC),
           Map.entry("ctx-scheme-diff.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-view.ok", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-view.marked", Boundary.PUBLIC),
           Map.entry("ctx-scheme-notices.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-filter-concepts.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-filter-concepts.no-match", Boundary.PUBLIC),
@@ -94,6 +96,7 @@ final class WireCaseDrivers {
           Map.entry("ctx-access-describe-rule.ok", Boundary.PUBLIC),
           Map.entry("ctx-access-describe-requirements.ok", Boundary.PUBLIC),
           Map.entry("ctx-access-rules.ok", Boundary.PUBLIC),
+          Map.entry("ctx-access-rules.marked", Boundary.PUBLIC),
           Map.entry("ctx-access-rules.no-policy", Boundary.PUBLIC),
           Map.entry("ctx-guide-scan.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-evaluate.ok", Boundary.PUBLIC),
@@ -103,6 +106,7 @@ final class WireCaseDrivers {
           Map.entry("ctx-guide-view.by-id", Boundary.PUBLIC),
           Map.entry("ctx-guide-filter-rules.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-view.ok", Boundary.PUBLIC),
+          Map.entry("ctx-guide-view.marked", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-describe.ok", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-describe.marked", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-translate.marking", Boundary.PUBLIC),
@@ -266,7 +270,11 @@ final class WireCaseDrivers {
         }
         default -> {}
       }
-      if (route.equals("access/rules")) return ctx.access().rules();
+      // The marked policy's case reads the policy's own marking off the same body.
+      if (route.equals("access/rules"))
+        return c.id().equals("ctx-access-rules.marked")
+            ? ctx.access().marking()
+            : ctx.access().rules();
       if (route.equals("crosswalk/describe")) return ctx.describeCrosswalks();
       throw new AssertionError("unowned public GET " + c.id());
     }

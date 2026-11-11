@@ -155,7 +155,13 @@ class ConformanceMappingTest {
             "buildPlanBody", String.class, List.class, String.class, String.class, Map.class);
     mapping.setAccessible(true);
     return (String[])
-        invoke(mapping, method, Replayer.parseJson(args), "scheme", "guide", Map.of("id", "guide"));
+        invoke(
+            mapping,
+            method,
+            Replayer.parseJson(args),
+            "conformance-scheme",
+            "guide",
+            Map.of("id", "guide"));
   }
 
   private static Map<?, ?> load(Path dir) throws Exception {

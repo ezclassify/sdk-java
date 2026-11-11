@@ -193,9 +193,7 @@ class CachePlanRunnerTest {
           return;
         }
         build(contextId, version, decisions);
-        // Connect traffic is outside every plan and a request names its Context without it, so a
-        // Context whose description the corpus does not record stays unconnected.
-        if (descriptionRecorded(contextId)) context.resolve();
+        context.resolve();
         transport.resetCounts();
         for (JsonElement step : plan.getAsJsonArray("steps")) run(step.getAsJsonObject());
         for (CompletableFuture<Outcome> call : inFlight) settle(call);
@@ -205,16 +203,6 @@ class CachePlanRunnerTest {
         if (reference != null) reference.close();
         callers.shutdownNow();
       }
-    }
-
-    private boolean descriptionRecorded(String contextId) {
-      String prefix = "/v1/ctx/" + contextId + "/";
-      return corpus.cases.values().stream()
-          .anyMatch(
-              c ->
-                  "GET".equals(c.method())
-                      && c.target().startsWith(prefix)
-                      && c.target().indexOf('/', prefix.length()) < 0);
     }
 
     private void build(String contextId, String version, boolean decisions) {
