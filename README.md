@@ -82,7 +82,7 @@ Name your application so the deployment can count its requests. The application 
 var credentials = new RestClientCredentials(userAccessToken, contextToken, "case-intake-portal");
 ```
 
-The SDK sends the id on Context routes as `x-ezclassify-application-id`; health checks do not carry it. A request without it, or with an id the deployment has not registered, is served the same way. A supplied caller token travels independently as `Authorization: Bearer`. The SDK rejects a blank or malformed id, and redacts the tokens from diagnostics. The JDK transport does not follow redirects. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
+The SDK sends the id on Context routes as `x-ezclassify-application-id`; health checks do not carry it. A request without it, or with an id the deployment has not registered, is served the same way. A supplied caller token travels independently as `Authorization: Bearer`. The id is 1 to 128 printable ASCII characters (0x21 to 0x7e, so no spaces); the SDK refuses any other id when the credentials are constructed. A value that does not match is served and counted as unidentified by the deployment. The SDK also redacts the tokens from diagnostics. The JDK transport does not follow redirects. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
 
 Use an `https://` endpoint anywhere the tokens leave the machine; a local development server on loopback may use `http://`. The client enforces this: supplying credentials for a plaintext `http://` endpoint on a non-loopback host is rejected at construction, as is a base URL that is not an absolute `http`/`https` URL.
 

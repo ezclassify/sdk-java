@@ -14,13 +14,14 @@ import java.net.http.HttpRequest;
  *     not require one
  * @param contextToken signed token authorizing Context operations, or {@code null} when not
  *     required by the Runtime's configured authorization policy
- * @param applicationId the id this application is registered under, or {@code null}; nonempty
- *     printable ASCII without surrounding whitespace
+ * @param applicationId the id this application is registered under, or {@code null}; 1 to 128
+ *     characters, each printable ASCII from 0x21 to 0x7e
  */
 public record RestClientCredentials(String accessToken, String contextToken, String applicationId) {
 
+  private static final int APPLICATION_ID_MAX_LENGTH = 128;
   private static final String MALFORMED_APPLICATION_ID =
-      "Application id must be nonempty printable ASCII without surrounding whitespace";
+      "Application id must be 1 to 128 characters, each printable ASCII from 0x21 to 0x7e";
 
   /**
    * Create independent caller and Context credentials with no application id.
@@ -43,14 +44,12 @@ public record RestClientCredentials(String accessToken, String contextToken, Str
    */
   public RestClientCredentials {
     if (applicationId != null) {
-      if (applicationId.isEmpty()
-          || applicationId.charAt(0) == ' '
-          || applicationId.charAt(applicationId.length() - 1) == ' ') {
+      if (applicationId.isEmpty() || applicationId.length() > APPLICATION_ID_MAX_LENGTH) {
         throw new IllegalArgumentException(MALFORMED_APPLICATION_ID);
       }
       for (int i = 0; i < applicationId.length(); i++) {
         char character = applicationId.charAt(i);
-        if (character < 0x20 || character > 0x7e) {
+        if (character < 0x21 || character > 0x7e) {
           throw new IllegalArgumentException(MALFORMED_APPLICATION_ID);
         }
       }

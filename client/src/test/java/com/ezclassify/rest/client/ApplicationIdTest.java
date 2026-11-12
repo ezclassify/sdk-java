@@ -37,6 +37,7 @@ class ApplicationIdTest {
         " ",
         " leading",
         "trailing ",
+        "inner space",
         "tab\tvalue",
         "line\r\nvalue",
         "zero\0value",
@@ -46,6 +47,18 @@ class ApplicationIdTest {
   void malformedApplicationIdsRefuse(String value) {
     assertThrows(
         IllegalArgumentException.class, () -> new RestClientCredentials(null, null, value));
+  }
+
+  @Test
+  void applicationIdGrammarBoundsLengthAndCharacters() {
+    var longest = "a".repeat(128);
+    assertEquals(longest, new RestClientCredentials(null, null, longest).applicationId());
+    assertEquals("!~", new RestClientCredentials(null, null, "!~").applicationId());
+    var tooLong =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new RestClientCredentials(null, null, "a".repeat(129)));
+    assertTrue(tooLong.getMessage().contains("1 to 128 characters"));
   }
 
   @Test
