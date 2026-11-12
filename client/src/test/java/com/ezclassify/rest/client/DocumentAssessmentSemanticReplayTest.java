@@ -351,7 +351,7 @@ class DocumentAssessmentSemanticReplayTest {
     JsonObject expected =
         Json.parseObject(
             "{\"resolution\":{\"contextId\":\"ref-scheme-1\",\"resolvedVersion\":\"1.0.0\","
-                + "\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],"
+                + "\"artifacts\":[]},"
                 + "\"result\":{\"markingRequirements\":{\"whole\":true,\"part\":true},"
                 + "\"whole\":null,\"wholes\":[],\"wholeValidation\":null,\"parts\":[],"
                 + "\"wholeCoversParts\":null,\"unmarkedSpans\":[],"

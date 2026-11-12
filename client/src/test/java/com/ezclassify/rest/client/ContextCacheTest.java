@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 class ContextCacheTest {
   private static final String PREFIX = "/v1/ctx/cache-test/1.0.0";
   private static final String RESOLUTION =
-      "\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[]";
+      "\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[]}";
   private static final String SETTLED_H =
       "\"assertions\":[],\"valid\":true,\"inputWasValid\":true,\"errors\":[],\"warnings\":[],"
           + "\"appliedFixes\":[],\"rendered\":\"H\",\"assessment\":{\"emitted\":[],\"omitted\":[],"
@@ -32,25 +32,24 @@ class ContextCacheTest {
   private static final String PROCESS_ENVELOPE =
       "{" + RESOLUTION + ",\"result\":{" + SETTLED_H + ",\"proposedFixes\":[],\"renders\":{}}}";
   private static final String DECISION =
-      "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],\"result\":{\"granted\":true,\"rules\":[],\"warnings\":[]}}";
+      "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[]},\"result\":{\"granted\":true,\"rules\":[],\"warnings\":[]}}";
   private static final String TRACE_ENVELOPE =
-      "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],\"result\":{\"input\":\"H\",\"schemeId\":\"s\",\"entries\":[],\"repairs\":[],\"validationErrors\":[],\"inferences\":[],\"finalAssertions\":[],\"rendered\":\"H\"}}";
+      "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[]},\"result\":{\"input\":\"H\",\"schemeId\":\"s\",\"entries\":[],\"repairs\":[],\"validationErrors\":[],\"inferences\":[],\"finalAssertions\":[],\"rendered\":\"H\"}}";
   private static final String SUGGESTIONS_ENVELOPE =
-      "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],\"result\":{\"level\":{\"suggestions\":[],\"warnings\":[]}}}";
+      "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[]},\"result\":{\"level\":{\"suggestions\":[],\"warnings\":[]}}}";
   private static final Assertion LEVEL =
-      new Assertion(
-          "level", "H", AssertionConfidence.CERTAIN, null, null, null, null, "user", null, null);
+      new Assertion("level", "H", AssertionConfidence.CERTAIN, null, "user", null, null);
   private static final String CUI_PREFIX = "/v1/ctx/us-gov-cui/20260720.0.0";
   private static final String CUI_ENVELOPE =
-      "{\"resolution\":{\"contextId\":\"us-gov-cui\",\"resolvedVersion\":\"20260720.0.0\",\"artifacts\":[],\"sources\":[]},"
-          + "\"operationLimitations\":[],\"result\":{\"valid\":true,\"rendered\":\"CUI\",\"inputWasValid\":true,"
+      "{\"resolution\":{\"contextId\":\"us-gov-cui\",\"resolvedVersion\":\"20260720.0.0\",\"artifacts\":[]},"
+          + "\"result\":{\"valid\":true,\"rendered\":\"CUI\",\"inputWasValid\":true,"
           + "\"assertions\":[{\"categoryId\":\"cui_designator\",\"conceptId\":\"CUI\",\"confidence\":\"certain\","
           + "\"source\":\"parse\"}],\"errors\":[],\"warnings\":[],\"appliedFixes\":[],\"proposedFixes\":[],"
           + "\"assessment\":{\"emitted\":[],\"omitted\":[],\"collapsed\":[],\"conflicts\":[],\"unrepresentable\":[]},"
           + "\"renders\":{},\"notices\":[]}}";
   private static final String CUI_CONCEPT_ENVELOPE =
-      "{\"resolution\":{\"contextId\":\"us-gov-cui\",\"resolvedVersion\":\"20260720.0.0\",\"artifacts\":[],\"sources\":[]},"
-          + "\"operationLimitations\":[],\"result\":{\"conceptId\":\"CUI\",\"categoryId\":\"cui_designator\",\"name\":\"CUI\","
+      "{\"resolution\":{\"contextId\":\"us-gov-cui\",\"resolvedVersion\":\"20260720.0.0\",\"artifacts\":[]},"
+          + "\"result\":{\"conceptId\":\"CUI\",\"categoryId\":\"cui_designator\",\"name\":\"CUI\","
           + "\"lines\":[\"CUI\"],\"rules\":[]}}";
   private static final String CUI_ACCESS_RULES =
       "{\"rules\":[{\"rule\":{\"artifact\":{\"kind\":\"access\",\"id\":\"cui-access\",\"version\":\"1.0.0\"},"
@@ -58,7 +57,7 @@ class ContextCacheTest {
           + "\"access\":{\"kind\":\"access\",\"id\":\"cui-access\",\"version\":\"1.0.0\"},"
           + "\"scheme\":{\"kind\":\"scheme\",\"id\":\"us-gov-cui\",\"version\":\"20260720.0.0\"},"
           + "\"name\":\"CUI rule\",\"requirementText\":\"Agency staff only\",\"attributesNeeded\":[\"agency\"],"
-          + "\"dependsOn\":[],\"overrides\":[],\"lines\":[]}]}";
+          + "\"dependsOn\":[],\"overrides\":[]}]}";
 
   @Test
   void everyCannedAnswerIsOneTheContractAllows() {
@@ -252,32 +251,9 @@ class ContextCacheTest {
         assertEquals(2, stub.requestCount());
         context.scheme().process("OTHER");
         assertEquals(3, stub.requestCount());
-        context.access().checkByMarking("H", "{}");
-        context.access().checkByMarking("H", "{}");
+        context.access().checkByMarking("H", Map.of());
+        context.access().checkByMarking("H", Map.of());
         assertEquals(5, stub.requestCount());
-      }
-    }
-  }
-
-  @Test
-  void accessDecisionOptInRequiresConcreteVersionAndClearCacheRefetches() throws Exception {
-    try (ClientStubServer stub =
-        new ClientStubServer(
-            Map.of(
-                PREFIX, ClientStubServer.description(PREFIX), PREFIX + "/access/check", DECISION),
-            "1.0.0")) {
-      try (EzClassifyClient client = stub.newClient()) {
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> client.context("cache-test", "latest", new ContextCacheOptions(true, false)));
-        EzClassifyContext context =
-            client.context("cache-test", "1.0.0", new ContextCacheOptions(true, false));
-        context.access().checkByMarking("H", "{}");
-        context.access().checkByMarking("H", "{}");
-        assertEquals(2, stub.requestCount());
-        context.clearCache();
-        context.access().checkByMarking("H", "{}");
-        assertEquals(3, stub.requestCount());
       }
     }
   }
@@ -295,7 +271,7 @@ class ContextCacheTest {
         context.scheme().process("H");
         assertEquals(3, stub.requestCount());
         EzClassifyContext noCache =
-            client.context("cache-test", "1.0.0", new ContextCacheOptions(false, true));
+            client.context("cache-test", "1.0.0", new ContextCacheOptions(true));
         noCache.scheme().process("H");
         noCache.scheme().process("H");
         assertEquals(6, stub.requestCount());
@@ -331,7 +307,7 @@ class ContextCacheTest {
   @Test
   void emptyOperationResultIsNotRetainedUnderConcretePin() throws Exception {
     String emptyResult =
-        "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],\"result\":{}}";
+        "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[]},\"result\":{}}";
     try (ClientStubServer stub =
         new ClientStubServer(
             Map.of(
@@ -391,9 +367,6 @@ class ContextCacheTest {
             "1.0.0")) {
       try (EzClassifyClient client =
           new EzClassifyClient(stub.url(), new RestClientCredentials(null, "signed-context"))) {
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> client.context("cache-test", null, new ContextCacheOptions(true, false)));
         EzClassifyContext context = client.context("cache-test");
         context.scheme().process("H");
         context.scheme().process("H");
@@ -452,7 +425,7 @@ class ContextCacheTest {
         context.scheme().process("H");
         stub.setStatus(PREFIX + "/access/check", 401);
         assertThrows(
-            EzClassifyClientException.class, () -> context.access().checkByMarking("H", "{}"));
+            EzClassifyClientException.class, () -> context.access().checkByMarking("H", Map.of()));
         context.scheme().process("H");
         assertEquals(4, stub.requestCount());
       }
@@ -536,7 +509,7 @@ class ContextCacheTest {
   @Test
   void suggestForCategoriesIsCachedAndAPartialAnswerIsNot() throws Exception {
     String partial =
-        "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],\"result\":{}}";
+        "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[]},\"result\":{}}";
     try (ClientStubServer stub =
         new ClientStubServer(
             Map.of(
@@ -564,7 +537,7 @@ class ContextCacheTest {
     // The answer is the map itself, so naming no category legitimately comes back as {}. Every
     // other operation still refuses an empty result as truncated.
     String empty =
-        "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],\"result\":{}}";
+        "{\"resolution\":{\"contextId\":\"cache-test\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[]},\"result\":{}}";
     try (ClientStubServer stub =
         new ClientStubServer(
             Map.of(

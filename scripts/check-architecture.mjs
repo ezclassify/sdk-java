@@ -5,8 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const handwrittenDir = path.join(root, 'types/src/main/java/com/ezclassify/rest/contract');
-const generatedRoot = path.join(root, 'types/target/generated-sources');
+const handwrittenDir = path.join(root, 'client/src/main/java/com/ezclassify/rest/contract');
+const generatedRoot = path.join(root, 'client/target/generated-sources');
 const generatedDir = path.join(generatedRoot, 'java/com/ezclassify/rest/contract');
 const errors = [];
 
@@ -24,7 +24,6 @@ if (
 
 const approvedHandwritten = {
   'encoding boundaries': ['Utf8Offsets'],
-  'Java-native projections': ['FilterResult'],
   'contract enum base': ['ExpandableStringEnum'],
   'public operation support': ['ContextOperationResult'],
 };
@@ -53,7 +52,7 @@ if (missing.length > 0) {
 const declarationPattern =
   /^\s*public\s+(?:(?:abstract|final)\s+)?(?:class|record|enum|interface)\s+([A-Za-z_$][\w$]*)/m;
 for (const name of actualHandwritten) {
-  const relative = `types/src/main/java/com/ezclassify/rest/contract/${name}.java`;
+  const relative = `client/src/main/java/com/ezclassify/rest/contract/${name}.java`;
   const source = fs.readFileSync(path.join(root, relative), 'utf8');
   if (!source.includes('package com.ezclassify.rest.contract;')) {
     errors.push(`${relative} is outside the canonical types package.`);
@@ -80,22 +79,18 @@ const generatedFiles = javaFiles(generatedDir);
 if (generatedFiles.length === 0) {
   errors.push('No generated type sources found; run Maven generate-sources before this guard.');
 }
-for (const file of allGeneratedFiles) {
-  if (!file.startsWith(`${generatedDir}${path.sep}`)) {
-    errors.push(`Generated Java output escaped its single package: ${path.relative(root, file)}`);
-  }
-}
 
-// The client module generates exactly one source: the package-private response
-// shape table. Anything else there, or a public type, would be a second owner of
-// generated contract code.
-const clientGeneratedDir = path.join(root, 'client/target/generated-sources');
-const clientGenerated = javaFiles(clientGeneratedDir).map((file) => path.relative(clientGeneratedDir, file));
-const expectedClientGenerated = [path.join('java', 'com', 'ezclassify', 'rest', 'client', 'ResponseShapes.java')];
-if (JSON.stringify(clientGenerated) !== JSON.stringify(expectedClientGenerated)) {
-  errors.push(`Client generated sources must be exactly ${expectedClientGenerated}; found ${clientGenerated.join(', ') || 'none'}`);
+// Beside the contract package the module generates exactly one source: the
+// package-private response shape table. Anything else, or a public type there,
+// would be a second owner of generated contract code.
+const expectedShapes = path.join(generatedRoot, 'java', 'com', 'ezclassify', 'rest', 'client', 'ResponseShapes.java');
+const outsideContract = allGeneratedFiles.filter((file) => !file.startsWith(`${generatedDir}${path.sep}`));
+if (JSON.stringify(outsideContract) !== JSON.stringify([expectedShapes])) {
+  errors.push(
+    `Generated sources outside the contract package must be exactly ${path.relative(root, expectedShapes)}; found ${outsideContract.map((f) => path.relative(root, f)).join(', ') || 'none'}`,
+  );
 } else {
-  const shapes = fs.readFileSync(path.join(clientGeneratedDir, expectedClientGenerated[0]), 'utf8');
+  const shapes = fs.readFileSync(expectedShapes, 'utf8');
   if (/^\s*public\s/m.test(shapes)) errors.push('The generated response shape table must not declare public members.');
 }
 

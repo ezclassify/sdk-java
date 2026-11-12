@@ -11,8 +11,6 @@ import com.ezclassify.rest.contract.ContextSchemeConceptDescriptionResult;
 import com.ezclassify.rest.contract.ContextSchemeCoverageResult;
 import com.ezclassify.rest.contract.ContextSchemeDiffResult;
 import com.ezclassify.rest.contract.ContextSchemeExplainResult;
-import com.ezclassify.rest.contract.ContextSchemeFilterConceptsResult;
-import com.ezclassify.rest.contract.ContextSchemeNormalizeResult;
 import com.ezclassify.rest.contract.ContextSchemeNoticesResult;
 import com.ezclassify.rest.contract.ContextSchemeProcessResult;
 import com.ezclassify.rest.contract.ContextSchemeRenderResult;
@@ -22,17 +20,14 @@ import com.ezclassify.rest.contract.ContextSchemeSuggestResult;
 import com.ezclassify.rest.contract.ContextSchemeValidateResult;
 import com.ezclassify.rest.contract.ContextSchemeViewResult;
 import com.ezclassify.rest.contract.DiffResult;
-import com.ezclassify.rest.contract.FilterResult;
 import com.ezclassify.rest.contract.FormatView;
 import com.ezclassify.rest.contract.LabelPresetView;
-import com.ezclassify.rest.contract.NormalizeResponse;
 import com.ezclassify.rest.contract.Notice;
 import com.ezclassify.rest.contract.ProcessResult;
 import com.ezclassify.rest.contract.ProcessingContext;
 import com.ezclassify.rest.contract.RenderPreservation;
 import com.ezclassify.rest.contract.RenderResponse;
 import com.ezclassify.rest.contract.ScanResponseBody;
-import com.ezclassify.rest.contract.SchemeGrammar;
 import com.ezclassify.rest.contract.SchemeScope;
 import com.ezclassify.rest.contract.SchemeSummary;
 import com.ezclassify.rest.contract.SchemeViewResponse;
@@ -77,10 +72,10 @@ import java.util.Map;
  * <h2 id="resources">Reading the scheme itself</h2>
  *
  * <p>{@link #summary()}, {@link #concepts()}, {@link #categories()}, {@link #formats()}, {@link
- * #grammar()}, {@link #scopes()} and {@link #labelPresets()} read what the view's scheme declares
- * rather than operate on a marking. Each answers the bare resource, with no result envelope, and
- * each reaches the server on every call; the response cache holds operations, not these reads. A
- * crosswalk's source and target are read through their own views.
+ * #scopes()} and {@link #labelPresets()} read what the view's scheme declares rather than operate
+ * on a marking. Each answers the bare resource, with no result envelope, and each reaches the
+ * server on every call; the response cache holds operations, not these reads. A crosswalk's source
+ * and target are read through their own views.
  *
  * <h2 id="formats">Formats and outputs</h2>
  *
@@ -678,44 +673,6 @@ public final class ContextScheme {
   }
 
   /**
-   * Return the canonical normalized form of a marking.
-   *
-   * @param input the raw marking text to normalize
-   * @return the canonical rendering of the marking
-   * @throws IllegalArgumentException if a required argument is null
-   */
-  public ContextSchemeNormalizeResult normalize(String input) {
-    return normalize(input, null, null);
-  }
-
-  /**
-   * Return the canonical normalized form of a marking, choosing what the input is read as and the
-   * output the canonical form is written in. Each option is sent under its wire name only when set.
-   *
-   * @param input the raw marking text to normalize
-   * @param inputFormat what {@code input} is read as, or {@code null} to let recognition work it
-   *     out (see <a href="#formats">Formats and outputs</a>)
-   * @param outputFormat the output the canonical form is written in, or {@code null} for the
-   *     default (see <a href="#formats">Formats and outputs</a>)
-   * @return the canonical rendering of the marking
-   * @throws IllegalArgumentException if a required argument is null
-   */
-  public ContextSchemeNormalizeResult normalize(
-      String input, String inputFormat, String outputFormat) {
-    Args.required(input, "input");
-    JsonObject body = new JsonObject();
-    Json.put(body, "input", input);
-    option(body, "inputFormat", inputFormat);
-    option(body, "outputFormat", outputFormat);
-    return ContextJson.project(
-        ctx.postResult(
-            at("scheme/normalize"),
-            body,
-            value -> WireJson.fromTree(value, NormalizeResponse.class)),
-        ContextSchemeNormalizeResult::new);
-  }
-
-  /**
    * Report whether a set of child markings is covered by a parent marking.
    *
    * @param children the part (child) markings to test for coverage
@@ -846,23 +803,6 @@ public final class ContextScheme {
   }
 
   /**
-   * Substring-filter the context's concepts.
-   *
-   * @param query the substring to filter concept names by
-   * @return the matching concept ids and the visible/total counts per category
-   * @throws IllegalArgumentException if a required argument is null
-   */
-  public ContextSchemeFilterConceptsResult filterConcepts(String query) {
-    Args.required(query, "query");
-    JsonObject body = new JsonObject();
-    Json.put(body, "query", query);
-    return ContextJson.project(
-        ctx.postResult(
-            at("scheme/filter-concepts"), body, value -> filterResult(value.getAsJsonObject())),
-        ContextSchemeFilterConceptsResult::new);
-  }
-
-  /**
    * Collect the concept notices for a set of assertions.
    *
    * <p>Call this when you hold assertions that did not come from a result of this client, for
@@ -966,18 +906,6 @@ public final class ContextScheme {
   }
 
   /**
-   * Read the parse grammar of this view's scheme.
-   *
-   * @return whether the vocabulary is matched case-sensitively and whether surrounding whitespace
-   *     is ignored
-   * @throws EzClassifyClientException if the server rejects the request, including a 404 for a
-   *     selector the Context does not hold, or answers a malformed body
-   */
-  public SchemeGrammar grammar() {
-    return ctx.getResource(at("scheme/grammar"), SchemeGrammar.class);
-  }
-
-  /**
    * List the scopes this view's scheme declares, in declaration order.
    *
    * @return the scope definitions in the order a selector offers them; empty, never {@code null},
@@ -1044,28 +972,6 @@ public final class ContextScheme {
             body,
             value -> WireJson.fromTree(value, ValidateResult.class)),
         ContextSchemeValidateResult::new);
-  }
-
-  // --- parsing helpers shared with guide view -----------------------------
-
-  static FilterResult filterResult(JsonObject o) {
-    // Insertion-ordered like every other wire-map parse in the client (Json.toMap,
-    // ContextJson.stringMap), so category counts iterate in wire order.
-    java.util.Map<String, FilterResult.Count> counts = new java.util.LinkedHashMap<>();
-    JsonObject cc = Json.optObject(o, "categoryCounts");
-    if (cc != null) {
-      for (String key : cc.keySet()) {
-        JsonObject c = cc.get(key).getAsJsonObject();
-        counts.put(key, new FilterResult.Count(Json.optInt(c, "visible"), Json.optInt(c, "total")));
-      }
-    }
-    JsonObject total = Json.optObject(o, "total");
-    FilterResult.Count totalCount =
-        total == null
-            ? new FilterResult.Count(0, 0)
-            : new FilterResult.Count(Json.optInt(total, "visible"), Json.optInt(total, "total"));
-    return new FilterResult(
-        ContextJson.stringList(Json.optArray(o, "visibleIds")), counts, totalCount);
   }
 
   /**

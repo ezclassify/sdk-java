@@ -1,27 +1,41 @@
 package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.ProcessingContext;
+import java.util.Objects;
 
 /**
  * Immutable choices for one facts-based aggregate operation.
  *
  * <p>Null omits an option; empty lists and false remain explicit wire choices.
- *
- * @param outputFormat The declared output address; null uses the server default.
- * @param surface The declared surface; null leaves the server default.
- * @param context The caller-supplied marking role and whole-marking context.
  */
-public record FactsAggregateOptions(
-    String outputFormat, String surface, ProcessingContext context) {
-  /**
-   * Snapshot caller-owned collections and nested contract values.
-   *
-   * @param outputFormat The declared output address; null uses the server default.
-   * @param surface The declared surface; null leaves the server default.
-   * @param context The caller-supplied marking role and whole-marking context.
-   */
-  public FactsAggregateOptions {
+public final class FactsAggregateOptions {
+  private final String outputFormat;
+  private final String surface;
+  private final ProcessingContext context;
+
+  private FactsAggregateOptions(String outputFormat, String surface, ProcessingContext context) {
     context = OptionSnapshots.context(context);
+    this.outputFormat = outputFormat;
+    this.surface = surface;
+    this.context = context;
+  }
+
+  /**
+   * The declared output address; null uses the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String outputFormat() {
+    return outputFormat;
+  }
+
+  /**
+   * The declared surface; null leaves the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String surface() {
+    return surface;
   }
 
   /**
@@ -29,9 +43,33 @@ public record FactsAggregateOptions(
    *
    * @return the option, or null when omitted
    */
-  @Override
   public ProcessingContext context() {
     return OptionSnapshots.context(context);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) return true;
+    if (!(other instanceof FactsAggregateOptions that)) return false;
+    return Objects.equals(outputFormat, that.outputFormat)
+        && Objects.equals(surface, that.surface)
+        && Objects.equals(context, that.context);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(outputFormat, surface, context);
+  }
+
+  @Override
+  public String toString() {
+    return "FactsAggregateOptions[outputFormat="
+        + outputFormat
+        + ", surface="
+        + surface
+        + ", context="
+        + context
+        + "]";
   }
 
   /**

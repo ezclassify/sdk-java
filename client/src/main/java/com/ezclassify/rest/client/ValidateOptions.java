@@ -2,36 +2,69 @@ package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.ProcessingContext;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Immutable choices for one validate operation.
  *
  * <p>Null omits an option; empty lists and false remain explicit wire choices.
- *
- * @param inputFormat The declared input view or form; null lets the server recognize it.
- * @param outputFormat The declared output address; null uses the server default.
- * @param surface The declared surface; null leaves the server default.
- * @param context The caller-supplied marking role and whole-marking context.
- * @param parts Part markings the whole must cover.
  */
-public record ValidateOptions(
-    String inputFormat,
-    String outputFormat,
-    String surface,
-    ProcessingContext context,
-    List<String> parts) {
-  /**
-   * Snapshot caller-owned collections and nested contract values.
-   *
-   * @param inputFormat The declared input view or form; null lets the server recognize it.
-   * @param outputFormat The declared output address; null uses the server default.
-   * @param surface The declared surface; null leaves the server default.
-   * @param context The caller-supplied marking role and whole-marking context.
-   * @param parts Part markings the whole must cover.
-   */
-  public ValidateOptions {
+public final class ValidateOptions {
+  private final String inputFormat;
+  private final String outputFormat;
+  private final String surface;
+  private final ProcessingContext context;
+  private final List<String> parts;
+
+  private ValidateOptions(
+      String inputFormat,
+      String outputFormat,
+      String surface,
+      ProcessingContext context,
+      List<String> parts) {
     context = OptionSnapshots.context(context);
     parts = parts == null ? null : List.copyOf(parts);
+    this.inputFormat = inputFormat;
+    this.outputFormat = outputFormat;
+    this.surface = surface;
+    this.context = context;
+    this.parts = parts;
+  }
+
+  /**
+   * The declared input view or form; null lets the server recognize it.
+   *
+   * @return the option, or null when omitted
+   */
+  public String inputFormat() {
+    return inputFormat;
+  }
+
+  /**
+   * The declared output address; null uses the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String outputFormat() {
+    return outputFormat;
+  }
+
+  /**
+   * The declared surface; null leaves the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String surface() {
+    return surface;
+  }
+
+  /**
+   * Part markings the whole must cover.
+   *
+   * @return the option, or null when omitted
+   */
+  public List<String> parts() {
+    return parts;
   }
 
   /**
@@ -39,9 +72,39 @@ public record ValidateOptions(
    *
    * @return the option, or null when omitted
    */
-  @Override
   public ProcessingContext context() {
     return OptionSnapshots.context(context);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) return true;
+    if (!(other instanceof ValidateOptions that)) return false;
+    return Objects.equals(inputFormat, that.inputFormat)
+        && Objects.equals(outputFormat, that.outputFormat)
+        && Objects.equals(surface, that.surface)
+        && Objects.equals(context, that.context)
+        && Objects.equals(parts, that.parts);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(inputFormat, outputFormat, surface, context, parts);
+  }
+
+  @Override
+  public String toString() {
+    return "ValidateOptions[inputFormat="
+        + inputFormat
+        + ", outputFormat="
+        + outputFormat
+        + ", surface="
+        + surface
+        + ", context="
+        + context
+        + ", parts="
+        + parts
+        + "]";
   }
 
   /**

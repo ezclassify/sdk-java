@@ -53,7 +53,6 @@ class RateLimitRetryAfterTest {
         call("scheme-concepts", CTX + "/scheme/concepts", url -> scheme(url).concepts()),
         call("scheme-categories", CTX + "/scheme/categories", url -> scheme(url).categories()),
         call("scheme-formats", CTX + "/scheme/formats", url -> scheme(url).formats()),
-        call("scheme-grammar", CTX + "/scheme/grammar", url -> scheme(url).grammar()),
         call("scheme-scopes", CTX + "/scheme/scopes", url -> scheme(url).scopes()),
         call(
             "scheme-label-presets",

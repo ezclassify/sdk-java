@@ -13,7 +13,6 @@ import com.ezclassify.rest.contract.LabelPresetView;
 import com.ezclassify.rest.contract.ProcessingRole;
 import com.ezclassify.rest.contract.RenderFormatMode;
 import com.ezclassify.rest.contract.Rollup;
-import com.ezclassify.rest.contract.SchemeGrammar;
 import com.ezclassify.rest.contract.SchemeScope;
 import com.ezclassify.rest.contract.SchemeSummary;
 import com.google.gson.JsonParser;
@@ -28,9 +27,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * The scheme resource reads: summary, concepts, categories, formats, grammar, scopes and label
- * presets. They answer the bare resource, send only the query the contract declares, and reach the
- * server on every call.
+ * The scheme resource reads: summary, concepts, categories, formats, scopes and label presets. They
+ * answer the bare resource, send only the query the contract declares, and reach the server on
+ * every call.
  */
 class ContextSchemeResourceTest {
   private static final OpenApiSchemas SPEC = OpenApiSchemas.load();
@@ -51,7 +50,7 @@ class ContextSchemeResourceTest {
 
   private static final String CATEGORIES =
       "[{\"id\":\"level\",\"label\":\"Level\",\"required\":true,\"single\":true,\"rollup\":\"max\","
-          + "\"sort\":\"numeric\",\"scopes\":[\"banner\"],\"position\":0,\"hierarchyRoot\":true,"
+          + "\"sort\":\"position\",\"scopes\":[\"banner\"],\"position\":0,\"hierarchyRoot\":true,"
           + "\"defaultConcept\":\"PUBLIC\"},"
           + "{\"id\":\"caveats\",\"label\":\"Caveats\",\"required\":false,\"single\":false,\"rollup\":\"union\","
           + "\"sort\":[\"position\",\"alphabetical\"],\"positionOverrides\":{\"DNF\":2}}]";
@@ -62,8 +61,6 @@ class ContextSchemeResourceTest {
           + "\"separatorBefore\":{\"caveats\":\"//\"},"
           + "\"categoryEach\":{\"caveats\":{\"prefix\":\"[\",\"suffix\":\"]\"}},"
           + "\"defaultFor\":[\"whole\"],\"role\":\"whole\",\"syntax\":{\"type\":\"xml-attributes\"}}]";
-
-  private static final String GRAMMAR = "{\"caseSensitive\":false,\"stripWhitespace\":true}";
 
   private static final String SCOPES =
       "[{\"id\":\"banner\",\"label\":\"Banner\"},{\"id\":\"portion\",\"label\":\"Portion\"}]";
@@ -81,7 +78,6 @@ class ContextSchemeResourceTest {
           new Read("concepts", "scheme/concepts", CONCEPTS, ContextScheme::concepts),
           new Read("categories", "scheme/categories", CATEGORIES, ContextScheme::categories),
           new Read("formats", "scheme/formats", FORMATS, ContextScheme::formats),
-          new Read("grammar", "scheme/grammar", GRAMMAR, ContextScheme::grammar),
           new Read("scopes", "scheme/scopes", SCOPES, ContextScheme::scopes),
           new Read(
               "label-presets", "scheme/label-presets", LABEL_PRESETS, ContextScheme::labelPresets));
@@ -184,7 +180,7 @@ class ContextSchemeResourceTest {
       assertEquals(Rollup.MAX, level.rollup());
       assertEquals(Boolean.TRUE, level.required());
       assertEquals(List.of("banner"), level.scopes());
-      assertEquals("numeric", level.sort());
+      assertEquals("position", level.sort());
       assertEquals("PUBLIC", level.defaultConcept());
       CategoryView caveats = categories.get(1);
       assertEquals(Rollup.UNION, caveats.rollup());
@@ -206,15 +202,6 @@ class ContextSchemeResourceTest {
       assertEquals("[", format.categoryEach().get("caveats").prefix());
       assertEquals(List.of(ProcessingRole.WHOLE), format.defaultFor());
       assertEquals(FormatSyntaxType.XML_ATTRIBUTES, format.syntax().type());
-    }
-  }
-
-  @Test
-  void grammarDecodesTheRecognitionPolicy() throws Exception {
-    try (ClientStubServer stub = stub()) {
-      SchemeGrammar grammar = scheme(stub).grammar();
-      assertEquals(false, grammar.caseSensitive());
-      assertEquals(true, grammar.stripWhitespace());
     }
   }
 
@@ -255,13 +242,9 @@ class ContextSchemeResourceTest {
           PREFIX + "/scheme/formats",
           "[{\"id\":\"long\",\"surface\":\"banner\",\"mode\":\"inline\",\"categoryOrder\":[],"
               + "\"syntax\":{\"type\":\"future-syntax\"},\"addedLater\":1}]");
-      stub.setResponse(
-          PREFIX + "/scheme/grammar",
-          "{\"caseSensitive\":true,\"stripWhitespace\":false,\"addedLater\":1}");
       FormatSyntaxType type = scheme(stub).formats().get(0).syntax().type();
       assertEquals("future-syntax", type.toWire());
       assertEquals(FormatSyntaxType.Value.UNKNOWN, type.value());
-      assertEquals(true, scheme(stub).grammar().caseSensitive());
     }
   }
 
@@ -274,13 +257,13 @@ class ContextSchemeResourceTest {
       stub.setResponse(PREFIX + "/scheme/categories", "{\"categories\":[]}");
       stub.setResponse(PREFIX + "/scheme", "[]");
       stub.setResponse(PREFIX + "/scheme/scopes", "[1,2]");
-      stub.setResponse(PREFIX + "/scheme/grammar", "{\"caseSensitive\":true}");
+      stub.setResponse(PREFIX + "/scheme/formats", "[{}]");
       assertThrows(MalformedResponseException.class, scheme::categories);
       assertThrows(MalformedResponseException.class, scheme::summary);
       assertThrows(MalformedResponseException.class, scheme::scopes);
       MalformedResponseException missing =
-          assertThrows(MalformedResponseException.class, scheme::grammar);
-      assertTrue(missing.path().startsWith("$."), missing.path());
+          assertThrows(MalformedResponseException.class, scheme::formats);
+      assertTrue(missing.path().startsWith("$[0]."), missing.path());
 
       // The next call asks the server again and sees the corrected answer.
       stub.setResponse(PREFIX + "/scheme/categories", CATEGORIES);

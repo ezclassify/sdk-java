@@ -12,7 +12,6 @@ import com.ezclassify.rest.contract.FixAction;
 import com.ezclassify.rest.contract.GuideBreakdownEntry;
 import com.ezclassify.rest.contract.ProcessResult;
 import com.ezclassify.rest.contract.ProcessingRole;
-import com.ezclassify.rest.contract.RepairConfidence;
 import com.ezclassify.rest.contract.ValidationError;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -22,35 +21,6 @@ import org.junit.jupiter.api.Test;
 
 /** Unit tests for the shared Context projections and the records {@link WireJson} decodes. */
 class ContextJsonTest {
-
-  @Test
-  void processResultCarriesWhatWasReadBeforeRepair() {
-    // The wire sends the reading only when repair changed it. A fix for a rule repair enforced
-    // is applied to this list, so it has to survive decoding; absent, the component is null.
-    String assertion =
-        "{\"conceptId\":\"%s\",\"categoryId\":\"level\",\"confidence\":\"certain\",\"source\":\"user\"}";
-    String repaired =
-        "{\"assertions\":["
-            + assertion.formatted("SENSITIVE")
-            + "],\"assertionsBeforeRepair\":["
-            + assertion.formatted("OPEN")
-            + ","
-            + assertion.formatted("SENSITIVE")
-            + "],\"valid\":true,\"inputWasValid\":false}";
-    ProcessResult read = WireJson.fromTree(Json.parseObject(repaired), ProcessResult.class);
-    assertEquals(
-        List.of("OPEN", "SENSITIVE"),
-        read.assertionsBeforeRepair().stream().map(a -> a.conceptId()).toList());
-
-    ProcessResult untouched =
-        WireJson.fromTree(
-            Json.parseObject(
-                "{\"assertions\":["
-                    + assertion.formatted("OPEN")
-                    + "],\"valid\":true,\"inputWasValid\":true}"),
-            ProcessResult.class);
-    assertNull(untouched.assertionsBeforeRepair());
-  }
 
   @Test
   void processResultCarriesOnlyTheRendersAndSuggestionsTheRequestNamed() {
@@ -222,15 +192,6 @@ class ContextJsonTest {
               "[{\"ruleId\":\"r\",\"message\":\"m\"" + token.formatted("action") + "}]");
       assertThrows(EzClassifyClientException.class, () -> ContextJson.changes(change), token);
 
-      JsonObject trace =
-          Json.parseObject(
-              "{\"repairs\":[{\"ruleId\":\"r\",\"description\":\"d\",\"before\":\"h\","
-                  + "\"after\":\"H\""
-                  + token.formatted("confidence")
-                  + "}]}");
-      assertThrows(
-          EzClassifyClientException.class, () -> ContextJson.explanationTrace(trace), token);
-
       JsonArray notice =
           Json.parseArray(
               "[{\"conceptId\":\"ORG\",\"conceptName\":\"O\",\"required\":true,"
@@ -250,25 +211,13 @@ class ContextJsonTest {
   }
 
   @Test
-  void anAbsentNullableEnumReadsAsNullAndANonStringOneIsMalformed() {
-    // Negative control for the required case: an enum the reader treats as nullable stays null
-    // when absent, and still refuses a token that is not a string.
-    JsonArray absent = Json.parseArray("[{\"constraintId\":\"c\",\"message\":\"m\"}]");
-    assertNull(ContextJson.validationErrors(absent).get(0).severity());
-
-    JsonArray number =
-        Json.parseArray("[{\"constraintId\":\"c\",\"message\":\"m\",\"severity\":5}]");
-    assertThrows(EzClassifyClientException.class, () -> ContextJson.validationErrors(number));
-  }
-
-  @Test
   void explanationTraceMapsEveryField() {
     JsonObject o =
         Json.parseObject(
             "{\"input\":\"h\",\"schemeId\":\"test-scheme\",\"rendered\":\"H\","
                 + "\"entries\":[{\"stage\":\"repair\",\"action\":\"applied\",\"detail\":\"fixed case\","
                 + "\"conceptId\":\"LEVEL_HIGH\",\"ruleId\":\"repair-1\",\"triggerConceptIds\":[\"t1\"]}],"
-                + "\"repairs\":[{\"ruleId\":\"repair-1\",\"description\":\"case fix\",\"confidence\":\"safe\","
+                + "\"repairs\":[{\"ruleId\":\"repair-1\",\"description\":\"case fix\","
                 + "\"before\":\"h\",\"after\":\"H\",\"cosmetic\":true}],"
                 + "\"inferences\":[{\"ruleId\":\"infer-2\",\"conceptId\":\"CTRL_X\","
                 + "\"conceptName\":\"Control X\",\"explanation\":\"implied\"}],"
@@ -291,7 +240,6 @@ class ContextJsonTest {
     assertEquals(1, t.repairs().size());
     assertEquals("repair-1", t.repairs().get(0).ruleId());
     assertEquals("case fix", t.repairs().get(0).description());
-    assertEquals(RepairConfidence.SAFE, t.repairs().get(0).confidence());
     assertEquals("h", t.repairs().get(0).before());
     assertEquals("H", t.repairs().get(0).after());
     assertEquals(Boolean.TRUE, t.repairs().get(0).cosmetic());
@@ -348,7 +296,7 @@ class ContextJsonTest {
   void aNoticeWhoseRequiredFlagIsNotABooleanIsRefusedRatherThanReadAsOptional() {
     JsonArray notices =
         Json.parseArray(
-            "[{\"conceptId\":\"ORG\",\"conceptName\":\"Org\",\"type\":\"handling\","
+            "[{\"conceptId\":\"ORG\",\"conceptName\":\"Org\",\"type\":\"warning\","
                 + "\"text\":\"t\",\"required\":1}]");
     assertThrows(MalformedResponseException.class, () -> ContextJson.collectedNotices(notices));
   }
@@ -374,7 +322,7 @@ class ContextJsonTest {
     JsonObject aggregate =
         Json.parseObject(
             "{\"rendered\":\"LEVEL-A\",\"valid\":true,\"notices\":[{\"conceptId\":\"ORG\","
-                + "\"conceptName\":\"Organization Only\",\"type\":\"handling\","
+                + "\"conceptName\":\"Organization Only\",\"type\":\"warning\","
                 + "\"text\":\"handle inside the organization\",\"required\":true,"
                 + "\"views\":{\"ism\":\"ORCON\",\"banner\":\"ORG ONLY\"}}]}");
 
@@ -382,7 +330,7 @@ class ContextJsonTest {
     assertEquals(1, notices.size());
     assertEquals("ORG", notices.get(0).conceptId());
     assertEquals("Organization Only", notices.get(0).conceptName());
-    assertEquals(ConceptNoticeType.HANDLING, notices.get(0).type());
+    assertEquals(ConceptNoticeType.WARNING, notices.get(0).type());
     assertEquals("handle inside the organization", notices.get(0).text());
     assertTrue(notices.get(0).required());
     assertEquals(Map.of("ism", "ORCON", "banner", "ORG ONLY"), notices.get(0).views());

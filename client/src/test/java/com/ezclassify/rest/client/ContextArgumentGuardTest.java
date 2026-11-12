@@ -41,10 +41,8 @@ class ContextArgumentGuardTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> scheme.render(null, RenderOptions.builder().outputFormat("banner").build()));
-    assertThrows(IllegalArgumentException.class, () -> scheme.normalize(null));
     assertThrows(IllegalArgumentException.class, () -> scheme.checkCoverage(null, "X"));
     assertThrows(IllegalArgumentException.class, () -> scheme.checkCoverage(List.of(), null));
-    assertThrows(IllegalArgumentException.class, () -> scheme.filterConcepts(null));
     assertThrows(IllegalArgumentException.class, () -> scheme.notices(null));
     assertThrows(IllegalArgumentException.class, () -> scheme.describeConcept("", "level"));
     assertThrows(
@@ -117,7 +115,6 @@ class ContextArgumentGuardTest {
         () ->
             scheme.scan(
                 null, ScanOptions.builder().inputFormat("portion").outputFormat("banner").build()));
-    assertThrows(IllegalArgumentException.class, () -> scheme.normalize(null, "portion", "banner"));
     assertThrows(
         IllegalArgumentException.class,
         () -> scheme.checkCoverage(List.of(), null, "portion", "banner"));
@@ -148,25 +145,19 @@ class ContextArgumentGuardTest {
     assertThrows(IllegalArgumentException.class, () -> guide.evaluate(null, "r1"));
     assertThrows(IllegalArgumentException.class, () -> guide.evaluate("  ", "r1"));
     assertThrows(IllegalArgumentException.class, () -> guide.evaluate("g1", (String[]) null));
-    assertThrows(IllegalArgumentException.class, () -> guide.filterRules(null));
-    assertThrows(IllegalArgumentException.class, () -> guide.describeRule(null));
-    assertThrows(IllegalArgumentException.class, () -> guide.describeRule(""));
   }
 
   @Test
   void accessOperationsRejectMissingArguments() {
     ContextAccess access = ctx().access();
     assertThrows(
-        IllegalArgumentException.class, () -> access.check(null, "{\"clearance\":\"HIGH\"}"));
-    assertThrows(
         IllegalArgumentException.class, () -> access.check((List<Assertion>) null, Map.of()));
     assertThrows(
         IllegalArgumentException.class, () -> access.check(List.of(), (Map<String, Object>) null));
-    assertThrows(IllegalArgumentException.class, () -> access.checkByMarking(null, "{}"));
+    assertThrows(IllegalArgumentException.class, () -> access.checkByMarking(null, Map.of()));
     assertThrows(
         IllegalArgumentException.class,
         () -> access.checkByMarking("X", (Map<String, Object>) null));
-    assertThrows(IllegalArgumentException.class, () -> access.describeRule(" "));
   }
 
   @Test

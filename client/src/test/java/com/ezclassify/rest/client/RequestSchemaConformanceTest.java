@@ -59,8 +59,7 @@ class RequestSchemaConformanceTest {
   private static final OpenApiSchemas SPEC = OpenApiSchemas.load();
 
   private static final Assertion LEVEL =
-      new Assertion(
-          "level", "HIGH", AssertionConfidence.CERTAIN, null, null, null, null, "parse", null, "H");
+      new Assertion("level", "HIGH", AssertionConfidence.CERTAIN, null, "parse", null, "H");
 
   private static final GuideDeterminationInput DETERMINATIONS =
       new GuideDeterminationInput(
@@ -241,17 +240,11 @@ class RequestSchemaConformanceTest {
                             .preservation(RenderPreservation.FULL)
                             .build())));
     c.put(
-        "scheme.normalize",
-        new Case("scheme/normalize", x -> x.scheme().normalize("h", "portion", "banner")));
-    c.put(
         "scheme.check-coverage",
         new Case(
             "scheme/check-coverage",
             x -> x.scheme().checkCoverage(List.of("L"), "H", "portion", "banner")));
     c.put("scheme.diff", new Case("scheme/diff", x -> x.scheme().diff("H", "L", "portion")));
-    c.put(
-        "scheme.filter-concepts",
-        new Case("scheme/filter-concepts", x -> x.scheme().filterConcepts("hi")));
     c.put("scheme.notices", new Case("scheme/notices", x -> x.scheme().notices(List.of(LEVEL))));
     c.put("scheme.view", new Case("scheme/view", x -> x.scheme().view()));
     c.put(
@@ -263,20 +256,7 @@ class RequestSchemaConformanceTest {
         "guide.evaluateMany",
         new Case(
             "guide/evaluate", x -> x.guide().evaluateMany(new GuideRuleSelection("g1", "r1"))));
-    c.put(
-        "guide.filter-rules",
-        new Case("guide/filter-rules", x -> x.guide().filterRules("sec", "g1")));
-    c.put(
-        "guide.describe-rule",
-        new Case("guide/describe-rule", x -> x.guide().describeRule("r1", "g1")));
     c.put("guide.view", new Case("guide/view", x -> x.guide().view("g1")));
-    c.put(
-        "access.check-json",
-        new Case(
-            "access/check",
-            x ->
-                x.access()
-                    .check(List.of(LEVEL), "{\"clearance\":\"high\"}", "{\"orgs\":[\"org-1\"]}")));
     c.put(
         "access.check-map",
         new Case(
@@ -287,13 +267,6 @@ class RequestSchemaConformanceTest {
                         List.of(LEVEL),
                         Map.<String, Object>of("clearance", "high"),
                         Map.<String, Object>of("orgs", List.of("org-1")))));
-    c.put(
-        "access.check-by-marking-json",
-        new Case(
-            "access/check",
-            x ->
-                x.access()
-                    .checkByMarking("H", "{\"clearance\":\"high\"}", "{\"orgs\":[\"org-1\"]}")));
     c.put(
         "access.check-by-marking-map",
         new Case(
@@ -309,9 +282,6 @@ class RequestSchemaConformanceTest {
         new Case(
             "access/describe-requirements",
             x -> x.access().describeRequirements("H", List.of(LEVEL))));
-    c.put(
-        "access.describe-rule",
-        new Case("access/describe-rule", x -> x.access().describeRule("rule-1")));
     c.put(
         "crosswalk.translate-marking",
         new Case("crosswalk/translate", x -> x.crosswalk().translate("cw-1", "H")));
@@ -484,14 +454,6 @@ class RequestSchemaConformanceTest {
             CTX_PREFIX + "scheme/formats",
             url -> context(url).schemes().get("source/a").formats()));
     c.put(
-        "scheme.grammar",
-        new GetCase(CTX_PREFIX + "scheme/grammar", url -> context(url).scheme().grammar()));
-    c.put(
-        "scheme.grammar-of-scheme",
-        new GetCase(
-            CTX_PREFIX + "scheme/grammar",
-            url -> context(url).schemes().get("source/a").grammar()));
-    c.put(
         "scheme.scopes",
         new GetCase(CTX_PREFIX + "scheme/scopes", url -> context(url).scheme().scopes()));
     c.put(
@@ -586,12 +548,7 @@ class RequestSchemaConformanceTest {
             .containsAll(Set.of("conceptId", "categoryId", "view")));
     for (String path :
         List.of(
-            "scheme",
-            "scheme/concepts",
-            "scheme/categories",
-            "scheme/formats",
-            "scheme/grammar",
-            "scheme/scopes")) {
+            "scheme", "scheme/concepts", "scheme/categories", "scheme/formats", "scheme/scopes")) {
       assertEquals(Set.of("scheme"), SPEC.declaredQueryParameters("get", CTX_PREFIX + path), path);
     }
     // Every scheme operation takes the selector and nothing else in its query.

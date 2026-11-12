@@ -8,7 +8,6 @@ import com.ezclassify.rest.contract.CollectedNotice;
 import com.ezclassify.rest.contract.ExplanationTrace;
 import com.google.gson.JsonObject;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -16,14 +15,12 @@ import org.junit.jupiter.api.Test;
  */
 class ContextProjectionTest {
   @Test
-  void assertionFieldsBindByNameAndUntypedMetadataStaysUntyped() {
+  void assertionFieldsBindByName() {
     JsonObject wire =
         Json.parseObject(
             """
         {"value":"v","sourceRule":"r","source":"caller","replacedConceptId":"old",
-         "provenance":{"providerId":"provider","reproducibility":"future-token"},
-         "metadata":{"conceptId":7,"source":false,"nested":[null,{"confidence":3}]},
-         "expiresAt":"tomorrow","confidence":"future-confidence",
+         "confidence":"future-confidence",
          "conceptId":"concept","categoryId":"category","futureMember":true}
         """);
     JsonObject original = wire.deepCopy();
@@ -31,19 +28,10 @@ class ContextProjectionTest {
     assertEquals("category", assertion.categoryId());
     assertEquals("concept", assertion.conceptId());
     assertEquals("future-confidence", assertion.confidence().toWire());
-    assertEquals("tomorrow", assertion.expiresAt());
     assertEquals("old", assertion.replacedConceptId());
     assertEquals("caller", assertion.source());
     assertEquals("r", assertion.sourceRule());
     assertEquals("v", assertion.value());
-    assertEquals("future-token", assertion.provenance().reproducibility().toWire());
-    assertNull(assertion.provenance().snapshotId());
-    assertNull(assertion.provenance().attribution());
-    assertEquals(Integer.valueOf(7), assertion.metadata().get("conceptId"));
-    assertEquals(Boolean.FALSE, assertion.metadata().get("source"));
-    List<?> nested = (List<?>) assertion.metadata().get("nested");
-    assertNull(nested.get(0));
-    assertEquals(Map.of("confidence", Integer.valueOf(3)), nested.get(1));
     assertEquals(original, wire);
   }
 
@@ -57,8 +45,6 @@ class ContextProjectionTest {
       assertEquals("", assertion.conceptId());
       assertEquals("", assertion.source());
       assertNull(assertion.value());
-      assertNull(assertion.metadata());
-      assertNull(assertion.provenance());
     }
     AggregateResult result =
         ContextJson.aggregateResult(
@@ -128,8 +114,7 @@ class ContextProjectionTest {
     for (String flag : List.of("true", "\"true\"", "7", "{}", "null")) {
       var trace =
           ContextJson.explanationTrace(
-              Json.parseObject(
-                  "{\"repairs\":[{\"confidence\":\"safe\",\"cosmetic\":" + flag + "}]}"));
+              Json.parseObject("{\"repairs\":[{\"cosmetic\":" + flag + "}]}"));
       Boolean expected =
           flag.equals("null") ? null : flag.equals("true") || flag.equals("\"true\"");
       assertEquals(expected, trace.repairs().get(0).cosmetic());

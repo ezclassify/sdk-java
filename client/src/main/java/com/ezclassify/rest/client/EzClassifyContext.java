@@ -1,7 +1,6 @@
 package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.AccessRuleDescription;
-import com.ezclassify.rest.contract.AssessmentLimitation;
 import com.ezclassify.rest.contract.ContextCrosswalkDescriptor;
 import com.ezclassify.rest.contract.ContextOperationResult;
 import com.ezclassify.rest.contract.ContextResolution;
@@ -66,7 +65,6 @@ public final class EzClassifyContext {
           "scheme/process",
           "scheme/validate",
           "scheme/explain",
-          "scheme/normalize",
           "scheme/render",
           "scheme/diff",
           "scheme/aggregate",
@@ -158,10 +156,6 @@ public final class EzClassifyContext {
     // An empty version is how a configuration says it names none, the same as null.
     this.version = version == null || version.isBlank() ? null : version;
     this.cacheOptions = cacheOptions == null ? ContextCacheOptions.defaults() : cacheOptions;
-    if (this.cacheOptions.cacheAccessDecisions() && !pinned()) {
-      throw new IllegalArgumentException(
-          "access decision caching requires a concrete Context version");
-    }
     this.httpClient = httpClient;
   }
 
@@ -454,15 +448,13 @@ public final class EzClassifyContext {
     try {
       ContextResolution resolution =
           WireJson.fromTree(requiredObject(envelope, "resolution"), ContextResolution.class);
-      List<AssessmentLimitation> limitations =
-          WireJson.listFromTree(envelope.get("operationLimitations"), AssessmentLimitation.class);
       DocumentResponseProjection projection =
           envelope.has("responseProjection") && !envelope.get("responseProjection").isJsonNull()
               ? WireJson.fromTree(
                   envelope.get("responseProjection"), DocumentResponseProjection.class)
               : null;
       return new ContextOperationResult<>(
-          resolution, resultParser.apply(requiredResult(envelope, empty)), limitations, projection);
+          resolution, resultParser.apply(requiredResult(envelope, empty)), projection);
     } catch (JsonParseException e) {
       throw malformed(e);
     }
@@ -566,8 +558,7 @@ public final class EzClassifyContext {
 
   private boolean cacheablePost(String op) {
     String route = route(op);
-    return CACHED_POST_OPERATIONS.contains(route)
-        || (cacheOptions.cacheAccessDecisions() && "access/check".equals(route));
+    return CACHED_POST_OPERATIONS.contains(route);
   }
 
   private long ttlNanos(String opWithQuery) {

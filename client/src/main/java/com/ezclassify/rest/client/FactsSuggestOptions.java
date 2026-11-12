@@ -1,18 +1,90 @@
 package com.ezclassify.rest.client;
 
+import java.util.Objects;
+
 /**
  * Immutable choices for one facts-based suggest operation.
  *
  * <p>Null omits an option; empty lists and false remain explicit wire choices.
- *
- * @param outputFormat The declared output address; null uses the server default.
- * @param surface The declared surface; null leaves the server default.
- * @param filter Text to narrow the available suggestions.
- * @param includeGated Whether to include choices with unmet prerequisites; null uses the server
- *     default.
  */
-public record FactsSuggestOptions(
-    String outputFormat, String surface, String filter, Boolean includeGated) {
+public final class FactsSuggestOptions {
+  private final String outputFormat;
+  private final String surface;
+  private final String filter;
+  private final Boolean includeGated;
+
+  private FactsSuggestOptions(
+      String outputFormat, String surface, String filter, Boolean includeGated) {
+    this.outputFormat = outputFormat;
+    this.surface = surface;
+    this.filter = filter;
+    this.includeGated = includeGated;
+  }
+
+  /**
+   * The declared output address; null uses the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String outputFormat() {
+    return outputFormat;
+  }
+
+  /**
+   * The declared surface; null leaves the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String surface() {
+    return surface;
+  }
+
+  /**
+   * Text to narrow the available suggestions.
+   *
+   * @return the option, or null when omitted
+   */
+  public String filter() {
+    return filter;
+  }
+
+  /**
+   * Whether to include choices with unmet prerequisites; null uses the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public Boolean includeGated() {
+    return includeGated;
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) return true;
+    if (!(other instanceof FactsSuggestOptions that)) return false;
+    return Objects.equals(outputFormat, that.outputFormat)
+        && Objects.equals(surface, that.surface)
+        && Objects.equals(filter, that.filter)
+        && Objects.equals(includeGated, that.includeGated);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(outputFormat, surface, filter, includeGated);
+  }
+
+  @Override
+  public String toString() {
+    return "FactsSuggestOptions[outputFormat="
+        + outputFormat
+        + ", surface="
+        + surface
+        + ", filter="
+        + filter
+        + ", includeGated="
+        + includeGated
+        + "]";
+  }
+
   /**
    * Omit every optional choice.
    *

@@ -54,11 +54,11 @@ public final class EzClassifyClient implements AutoCloseable {
   }
 
   /**
-   * Create a server-level client with independent caller and Context credentials.
+   * Create a server-level client with independent caller and Context credentials and the
+   * application id.
    *
    * @param baseUrl REST API base URL
-   * @param credentials a caller token with a Context token or an application credential; {@code
-   *     null} for none
+   * @param credentials caller and Context tokens and the application id; {@code null} for none
    * @throws IllegalArgumentException when {@code baseUrl} is not an absolute http or https URL, or
    *     when credentials are supplied for a plaintext http endpoint that is not on loopback
    */
@@ -103,14 +103,14 @@ public final class EzClassifyClient implements AutoCloseable {
   }
 
   /**
-   * Connect with independent caller-identity and Context-authorization credentials.
+   * Connect with independent caller-identity and Context-authorization credentials and the
+   * application id.
    *
    * @param baseUrl REST API base URL
    * @param contextId Context identifier
    * @param version concrete Context version, {@code latest}, or {@code null} to let the server
    *     choose
-   * @param credentials a caller token with a Context token or an application credential; {@code
-   *     null} for none
+   * @param credentials caller and Context tokens and the application id; {@code null} for none
    * @return the resolved Context client
    * @throws IllegalArgumentException when a Context id or version is a literal dot segment
    */
@@ -120,19 +120,16 @@ public final class EzClassifyClient implements AutoCloseable {
   }
 
   /**
-   * Connect with explicit response-cache choices for the bound Context.
+   * Connect with an explicit response-cache choice for the bound Context.
    *
    * @param baseUrl REST API base URL
    * @param contextId Context identifier
    * @param version immutable Context version, {@code latest}, or {@code null} to let the server
    *     choose
-   * @param credentials a caller token with a Context token or an application credential; {@code
-   *     null} for none
-   * @param cacheOptions response reuse and access-audit choices
+   * @param credentials caller and Context tokens and the application id; {@code null} for none
+   * @param cacheOptions response reuse choice
    * @return the resolved Context client
    * @throws IllegalArgumentException when a Context id or version is a literal dot segment
-   * @throws IllegalArgumentException if access-decision caching is requested without a concrete
-   *     Context version
    */
   public static EzClassifyContext connect(
       String baseUrl,
@@ -178,16 +175,14 @@ public final class EzClassifyClient implements AutoCloseable {
   }
 
   /**
-   * Bind this server client with explicit response-cache choices.
+   * Bind this server client with an explicit response-cache choice.
    *
    * @param contextId Context identifier
    * @param version immutable Context version, {@code latest}, or {@code null} to let the server
    *     choose
-   * @param cacheOptions response reuse and access-audit choices
+   * @param cacheOptions response reuse choice
    * @return the resolved Context client
    * @throws IllegalArgumentException when a Context id or version is a literal dot segment
-   * @throws IllegalArgumentException if access-decision caching is requested without a concrete
-   *     Context version
    */
   public EzClassifyContext context(
       String contextId, String version, ContextCacheOptions cacheOptions) {

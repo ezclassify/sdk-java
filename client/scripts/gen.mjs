@@ -922,13 +922,11 @@ const OPENAPI_PUBLIC_ROOTS = [
   'CtxDocumentAuditRequestBody',
   'GuideRuleSelection',
   'ProcessingContext',
-  'Reproducibility',
   'RenderPreservation',
   'CategoryView',
   'ConceptView',
   'FormatView',
   'LabelPresetView',
-  'SchemeGrammar',
   'SchemeScope',
   'SchemeSummary',
 ];
@@ -947,7 +945,6 @@ const GENERATED_OPENAPI_OWNERS = new Set([
   'AssertionReference',
   'AssertionSupport',
   'AssessmentLimitation',
-  'Attribution',
   'ContentEvidenceSpan',
   'ContextResolution',
   'DecisionProposalOrigin',
@@ -972,19 +969,11 @@ const GENERATED_OPENAPI_OWNERS = new Set([
   'ManualGuideSelection',
   'ManualGuideSelectionInput',
   'MarkingValidation',
-  'Reproducibility',
   'RuleReference',
-  'RuleSourceReference',
-  'SourceReference',
   'TraceInference',
   'TraceRepair',
   'TraceValidationIssue',
   'WarningKind',
-]);
-
-const NAMED_FIELD_TYPES = new Map([
-  ['RuleSourceReference.reproducibility', 'Reproducibility'],
-  ['SourceReference.reproducibility', 'Reproducibility'],
 ]);
 
 // These contract locations intentionally carry opaque JSON values. Everything
@@ -993,6 +982,8 @@ const OPAQUE_COMPONENTS = new Set(['MatchNode', 'RuleWhen', 'RuleWhenNode', 'Win
 const OPAQUE_FIELDS = new Set([
   'CategoryView.defaultConcept',
   'CategoryView.sort',
+  'GuideWhenNode.value',
+  'GuideWhenTest.value',
   'RuleCondition.value',
 ]);
 
@@ -1064,7 +1055,6 @@ function nullableVariant(schema) {
 }
 
 function openapiType(schema, location, required = false, nestedTypes = null) {
-  if (NAMED_FIELD_TYPES.has(location)) return NAMED_FIELD_TYPES.get(location);
   if (schema.$ref) {
     const name = schema.$ref.split('/').at(-1);
     const referenced = openapi.components.schemas[name];
@@ -1297,7 +1287,11 @@ for (const name of [...reachableOpenapi].sort()) {
   if (schema.$ref) continue;
   if (schema.type === 'object' && !schema.properties && schema.additionalProperties) continue;
   // A union of string constants is a closed string enum, however the contract spells it.
-  const closedStrings = schema.enum ? schema : flattenClosedStringUnion(schema);
+  const closedStrings = schema.enum
+    ? schema
+    : typeof schema.const === 'string' && schema.type === 'string'
+      ? { ...schema, enum: [schema.const] }
+      : flattenClosedStringUnion(schema);
   const source = closedStrings
     ? generateEnum(name, closedStrings.enum, schema.description)
     : generateOpenapiRecord(name, schema);

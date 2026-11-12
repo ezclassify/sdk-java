@@ -35,7 +35,6 @@
     </scm>
 
     <modules>
-        <module>types</module>
         <module>client</module>
         <module>examples/sdk-tour</module>
         <module>build-support/repo-policy</module>
@@ -56,11 +55,6 @@
     <dependencyManagement>
         <dependencies>
             <!-- Internal modules -->
-            <dependency>
-                <groupId>com.ezclassify.rest</groupId>
-                <artifactId>contract</artifactId>
-                <version>${project.version}</version>
-            </dependency>
             <dependency>
                 <groupId>com.ezclassify.rest</groupId>
                 <artifactId>client</artifactId>

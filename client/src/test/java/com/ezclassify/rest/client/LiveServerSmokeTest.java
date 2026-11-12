@@ -62,7 +62,6 @@ class LiveServerSmokeTest {
     assertTrue(!scheme.summary().id().isBlank(), "summary must name the scheme");
     assertTrue(!scheme.categories().isEmpty(), "a scheme declares categories");
     assertTrue(!scheme.formats().isEmpty(), "a scheme writes at least one format");
-    assertNotNull(scheme.grammar());
     assertNotNull(scheme.scopes());
     assertNotNull(scheme.labelPresets());
     EzClassifyClientException refusal =

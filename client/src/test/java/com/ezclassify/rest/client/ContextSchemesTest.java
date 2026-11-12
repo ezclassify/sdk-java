@@ -30,7 +30,7 @@ class ContextSchemesTest {
   private static final String PREFIX = "/v1/ctx/district/1.0.0";
 
   private static final String RESOLUTION =
-      "\"resolution\":{\"contextId\":\"district\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[]";
+      "\"resolution\":{\"contextId\":\"district\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[]}";
   private static final String PROCESS_ENVELOPE =
       "{"
           + RESOLUTION
@@ -40,8 +40,7 @@ class ContextSchemesTest {
           + "\"proposedFixes\":[],\"renders\":{}}}";
 
   private static final Assertion LEVEL =
-      new Assertion(
-          "level", "H", AssertionConfidence.CERTAIN, null, null, null, null, "user", null, null);
+      new Assertion("level", "H", AssertionConfidence.CERTAIN, null, "user", null, null);
 
   /** One scheme operation: its route under the Context prefix and a call that sends it. */
   private record Operation(String route, Consumer<ContextScheme> call) {}
@@ -60,11 +59,9 @@ class ContextSchemesTest {
           new Operation("scheme/aggregate", s -> s.aggregateAssertions(List.of(List.of(LEVEL)))),
           new Operation("scheme/scan", s -> s.scan("text H text")),
           new Operation("scheme/render", s -> s.render(List.of(LEVEL))),
-          new Operation("scheme/normalize", s -> s.normalize("H")),
           new Operation("scheme/check-coverage", s -> s.checkCoverage(List.of("H"), "H")),
           new Operation("scheme/describe-concept", s -> s.describeConcept("H", "level")),
           new Operation("scheme/diff", s -> s.diff("H", "L")),
-          new Operation("scheme/filter-concepts", s -> s.filterConcepts("H")),
           new Operation("scheme/notices", s -> s.notices(List.of(LEVEL))),
           new Operation("scheme/view", ContextScheme::view),
           new Operation("scheme/apply-preset", s -> s.applyPreset("preset")),
@@ -72,7 +69,6 @@ class ContextSchemesTest {
           new Operation("scheme/concepts", ContextScheme::concepts),
           new Operation("scheme/categories", ContextScheme::categories),
           new Operation("scheme/formats", ContextScheme::formats),
-          new Operation("scheme/grammar", ContextScheme::grammar),
           new Operation("scheme/scopes", ContextScheme::scopes),
           new Operation("scheme/label-presets", ContextScheme::labelPresets));
 

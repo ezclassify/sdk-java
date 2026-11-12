@@ -144,7 +144,7 @@ class WireCorpusTest {
                   pieces[4],
                   WireCaseDrivers.credentials(c),
                   observed,
-                  new ContextCacheOptions(false, true));
+                  new ContextCacheOptions(true));
           value = auditDefault ? context.document().audit("") : WireCaseDrivers.invoke(c, context);
         } else {
           try (var client = new EzClassifyClient(base, WireCaseDrivers.credentials(c))) {
@@ -246,7 +246,7 @@ class WireCorpusTest {
 
   private static final java.util.regex.Pattern SCHEME_RESOURCE =
       java.util.regex.Pattern.compile(
-          "^/v1/ctx/[^/]+/[^/]+/scheme(/(concepts|categories|formats|grammar|scopes|label-presets))?$");
+          "^/v1/ctx/[^/]+/[^/]+/scheme(/(concepts|categories|formats|scopes|label-presets))?$");
 
   /** Whether a path is one of the scheme resource reads, which answer without an envelope. */
   private static boolean isSchemeResource(String target) {

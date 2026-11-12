@@ -1,19 +1,18 @@
 package com.ezclassify.rest.client;
 
 /**
- * Response-cache choices for one Context binding.
+ * Response-cache choice for one Context binding.
  *
- * @param cacheAccessDecisions permit repeated access checks to return without a server audit
- *     record; requires a concrete Context version
- * @param disableCache send every operation to the server, including normally cached scheme reads
+ * @param disableCache send every operation to the server, including normally cached scheme reads;
+ *     access decisions are always sent to the server
  */
-public record ContextCacheOptions(boolean cacheAccessDecisions, boolean disableCache) {
+public record ContextCacheOptions(boolean disableCache) {
   /**
-   * Use bounded scheme caching while sending each access decision to the server.
+   * Use bounded scheme caching.
    *
-   * @return the default cache choices
+   * @return the default cache choice
    */
   public static ContextCacheOptions defaults() {
-    return new ContextCacheOptions(false, false);
+    return new ContextCacheOptions(false);
   }
 }

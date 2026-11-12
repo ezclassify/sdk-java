@@ -76,16 +76,13 @@ try (EzClassifyClient client = new EzClassifyClient("https://rest-api.example.co
 }
 ```
 
-For application access, supply the opaque application credential instead of a Context token. If the application definition requires a verified user, also supply that caller's access token from your customer identity provider:
+Name your application so the deployment can count its requests. The application id is the id your application is registered under. It is not a credential and authorizes nothing, so it can travel with or without tokens:
 
 ```java
-var applicationCredential = java.util.Objects.requireNonNull(
-    System.getenv("EZC_APPLICATION_CREDENTIAL"), "Set EZC_APPLICATION_CREDENTIAL.");
-String userAccessToken = null; // Set from this caller when the published policy requires a verified user.
-var credentials = new RestClientCredentials(userAccessToken, null, applicationCredential);
+var credentials = new RestClientCredentials(userAccessToken, contextToken, "case-intake-portal");
 ```
 
-The SDK sends the grant unchanged as `X-EzClassify-Application-Grant` only on Context discovery, version, binding and operation routes; health omits it. A supplied caller token travels independently as `Authorization: Bearer`. The SDK rejects an application grant combined with a Context token, or a blank or malformed credential. It redacts credentials from diagnostics and does not decode, renew or replay them. The JDK transport does not follow redirects. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
+The SDK sends the id on every request as `x-ezclassify-application-id`. A request without it, or with an id the deployment has not registered, is served the same way. A supplied caller token travels independently as `Authorization: Bearer`. The SDK rejects a blank or malformed id, and redacts the tokens from diagnostics. The JDK transport does not follow redirects. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
 
 Use an `https://` endpoint anywhere the tokens leave the machine; a local development server on loopback may use `http://`. The client enforces this: supplying credentials for a plaintext `http://` endpoint on a non-loopback host is rejected at construction, as is a base URL that is not an absolute `http`/`https` URL.
 
@@ -148,7 +145,7 @@ why.entries().forEach(step -> System.out.println(step.stage() + ": " + step.deta
 
 ## Reading the scheme itself
 
-Seven reads answer what the composed scheme declares, rather than operating on a marking. They return the contract's view types directly, with no `result` envelope:
+Six reads answer what the composed scheme declares, rather than operating on a marking. They return the contract's view types directly, with no `result` envelope:
 
 | Call | Returns |
 |------|---------|
@@ -156,7 +153,6 @@ Seven reads answer what the composed scheme declares, rather than operating on a
 | `scheme().concepts()` | `List<ConceptView>` |
 | `scheme().categories()` | `List<CategoryView>`, in declared order |
 | `scheme().formats()` | `List<FormatView>`: each format's id, surface, layout and syntax |
-| `scheme().grammar()` | `SchemeGrammar`: case sensitivity and whitespace handling |
 | `scheme().scopes()` | `List<SchemeScope>`, in declaration order, empty when none are declared |
 | `scheme().labelPresets()` | `List<LabelPresetView>`: id, label, description and scope, empty when none are declared |
 
@@ -188,7 +184,7 @@ The server decides which keys exist. A key the Context does not hold is a 404 `s
 
 ## Response caching
 
-A Context handle answers a repeated identical question from memory. These operations are cached: `process`, `validate`, `explain`, `normalize`, `render`, `diff`, `aggregate`, `aggregateAssertions`, `applyPreset`, `suggest`, `suggestForCategories`, `scan`, `describeConcept`, `access().rules()`, `access().marking()`, and `describeCrosswalks()`. Every other operation reaches the server on every call.
+A Context handle answers a repeated identical question from memory. These operations are cached: `process`, `validate`, `explain`, `render`, `diff`, `aggregate`, `aggregateAssertions`, `applyPreset`, `suggest`, `suggestForCategories`, `scan`, `describeConcept`, `access().rules()`, `access().marking()`, and `describeCrosswalks()`. Every other operation reaches the server on every call.
 
 - **Keys.** The scheme view and every field of the request are part of the key, so two `process` calls that name different `outputs` or `suggestFor` are two entries, and `explain` never answers from a `process` entry for the same input. Member order and members left unset do not change the key.
 - **Concurrent calls.** Identical calls made while one is in flight share that one HTTP request. A request that runs longer than its lifetime stays joinable.
@@ -197,16 +193,11 @@ A Context handle answers a repeated identical question from memory. These operat
 - **Lifetime.** A concrete Context version is immutable, so its entries stay until LRU eviction or `context.clearCache()`. A `latest` binding, and one that names no version, keeps entries for five minutes, two minutes for scans, and one hour for concept descriptions and the access-rule list.
 - **Invalidation.** A response that names a different resolved version than the one the entries were answered under clears them. So does a 401 and the runtime's constant `{"error":"not_found"}` refusal, whatever credential the handle holds. A 404 that names a missing concept or scheme is an answer about that resource and leaves the cache alone. A handle belongs to one caller identity; build a new one when the caller changes.
 
-Access checks reach the server on every call by default so each decision appears in its audit trail. Document and guide operations, `access().describeRequirements`, and `crosswalk().translate` are never cached, and neither are the [scheme reads](#reading-the-scheme-itself): `summary`, `concepts`, `categories`, `formats`, `grammar`, `scopes`, and `labelPresets` ask the server every time. A caller who accepts missing server audit records can opt into caching the two access checks, under a concrete Context version only. Asking for it on `latest` or without a version throws `IllegalArgumentException`:
-
-```java
-var options = new ContextCacheOptions(true, false);
-EzClassifyContext context = client.context("my-context", "1.0.0", options);
-```
+Access checks reach the server on every call so each decision appears in its audit trail. Document and guide operations, `access().describeRequirements`, and `crosswalk().translate` are never cached, and neither are the [scheme reads](#reading-the-scheme-itself): `summary`, `concepts`, `categories`, `formats`, `scopes`, and `labelPresets` ask the server every time.
 
 When supplying cache options or credentials, keep the version argument: `client.context("my-context", null, options)` or `EzClassifyClient.connect(baseUrl, "my-context", null, credentials)`. A `null` version lets the server choose while keeping these overloads unambiguous.
 
-Use `new ContextCacheOptions(false, true)` to disable response caching for a handle. The `clearCache()` method drops retained operation answers without dropping the Context binding or its description.
+Use `new ContextCacheOptions(true)` to disable response caching for a handle. The `clearCache()` method drops retained operation answers without dropping the Context binding or its description.
 
 ### Recording what answered
 
@@ -223,11 +214,12 @@ The description is read once when the handle connects and held, not cached with 
 
 ## Modules
 
-The Javadoc reference covers both shipped modules, including generated wire
-models. Internal transport helpers and repository tools are outside that public API.
+The SDK ships as one artifact, `com.ezclassify.rest:client`. It holds the HTTP client in
+`com.ezclassify.rest.client` and the generated wire types in `com.ezclassify.rest.contract`.
+The Javadoc reference covers both packages. Internal transport helpers and repository tools
+are outside that public API.
 
-- `contract`: generated wire DTOs and Java adapter projections.
-- `client`: HTTP client for the REST API.
+
 
 The SDK is a client only. Engine operation belongs to EzClassify's licensed runtime host.
 

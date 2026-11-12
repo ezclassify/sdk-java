@@ -36,7 +36,6 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-concepts.layered", Boundary.PUBLIC),
           Map.entry("ctx-scheme-categories.layered", Boundary.PUBLIC),
           Map.entry("ctx-scheme-formats.ok", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-grammar.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-scopes.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-scopes.none", Boundary.PUBLIC),
           Map.entry("ctx-scheme-label-presets.ok", Boundary.PUBLIC),
@@ -46,7 +45,6 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-concepts.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-categories.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-formats.full", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-grammar.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-scopes.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-label-presets.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-process.ok", Boundary.PUBLIC),
@@ -62,15 +60,12 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-process.undeclared-format", Boundary.PUBLIC),
           Map.entry("ctx-scheme-aggregate.input-format-with-sets", Boundary.PRIVATE),
           Map.entry("ctx-scheme-explain.ok", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-normalize.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-render.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-render.empty", Boundary.PUBLIC),
           Map.entry("ctx-scheme-diff.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-view.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-view.marked", Boundary.PUBLIC),
           Map.entry("ctx-scheme-notices.ok", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-filter-concepts.ok", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-filter-concepts.no-match", Boundary.PUBLIC),
           Map.entry("ctx-scheme-scan.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-aggregate.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-aggregate.selected-scheme", Boundary.PUBLIC),
@@ -93,7 +88,6 @@ final class WireCaseDrivers {
           Map.entry("ctx-access-check.marking", Boundary.PUBLIC),
           Map.entry("ctx-access-check.assertions", Boundary.PUBLIC),
           Map.entry("ctx-access-check.two-attributes", Boundary.PUBLIC),
-          Map.entry("ctx-access-describe-rule.ok", Boundary.PUBLIC),
           Map.entry("ctx-access-describe-requirements.ok", Boundary.PUBLIC),
           Map.entry("ctx-access-rules.ok", Boundary.PUBLIC),
           Map.entry("ctx-access-rules.marked", Boundary.PUBLIC),
@@ -101,10 +95,7 @@ final class WireCaseDrivers {
           Map.entry("ctx-guide-scan.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-evaluate.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-evaluate.selections", Boundary.PUBLIC),
-          Map.entry("ctx-guide-describe-rule.ok", Boundary.PUBLIC),
-          Map.entry("ctx-guide-describe-rule.unknown-guide", Boundary.PUBLIC),
           Map.entry("ctx-guide-view.by-id", Boundary.PUBLIC),
-          Map.entry("ctx-guide-filter-rules.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-view.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-view.marked", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-describe.ok", Boundary.PUBLIC),
@@ -130,7 +121,6 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-process.undeclared-request-field-unknownField", Boundary.PRIVATE),
           Map.entry("ctx-scheme-validate.undeclared-field", Boundary.PRIVATE),
           Map.entry("ctx-scheme-explain.undeclared-field", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-normalize.undeclared-field", Boundary.PRIVATE),
           Map.entry("ctx-scheme-aggregate.undeclared-field", Boundary.PRIVATE),
           Map.entry("ctx-scheme-suggest.undeclared-field", Boundary.PRIVATE),
           Map.entry("ctx-scheme-suggest-for-categories.undeclared-field", Boundary.PRIVATE),
@@ -199,7 +189,6 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-process.undeclared-request-field-unknownField", CLOSED_REQUEST),
           Map.entry("ctx-scheme-validate.undeclared-field", CLOSED_REQUEST),
           Map.entry("ctx-scheme-explain.undeclared-field", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-normalize.undeclared-field", CLOSED_REQUEST),
           Map.entry("ctx-scheme-aggregate.undeclared-field", CLOSED_REQUEST),
           Map.entry("ctx-scheme-suggest.undeclared-field", CLOSED_REQUEST),
           Map.entry("ctx-scheme-suggest-for-categories.undeclared-field", CLOSED_REQUEST),
@@ -256,9 +245,6 @@ final class WireCaseDrivers {
         case "scheme/formats" -> {
           return s.formats();
         }
-        case "scheme/grammar" -> {
-          return s.grammar();
-        }
         case "scheme/scopes" -> {
           return s.scopes();
         }
@@ -306,7 +292,6 @@ final class WireCaseDrivers {
           s.suggestForCategories(facts(body), strings(body, "categoryIds"));
       case "scheme/apply-preset" -> s.applyPreset(text(body, "presetId"));
       case "scheme/explain" -> s.explain(text(body, "input"));
-      case "scheme/normalize" -> s.normalize(text(body, "input"));
       case "scheme/render" ->
           s.render(
               facts(body),
@@ -314,7 +299,6 @@ final class WireCaseDrivers {
       case "scheme/diff" -> s.diff(text(body, "a"), text(body, "b"));
       case "scheme/view" -> s.view();
       case "scheme/notices" -> s.notices(facts(body));
-      case "scheme/filter-concepts" -> s.filterConcepts(text(body, "query"));
       case "scheme/scan" -> s.scan(text(body, "text"));
       case "scheme/aggregate" ->
           body.has("assertionSets")
@@ -324,12 +308,8 @@ final class WireCaseDrivers {
           s.checkCoverage(strings(body, "children"), text(body, "parent"));
       case "access/check" ->
           body.has("assertions")
-              ? ctx.access()
-                  .check(facts(body), body.get("userAttributes").toString(), context(body))
-              : ctx.access()
-                  .checkByMarking(
-                      text(body, "marking"), body.get("userAttributes").toString(), context(body));
-      case "access/describe-rule" -> ctx.access().describeRule(text(body, "ruleId"));
+              ? ctx.access().check(facts(body), attributes(body), context(body))
+              : ctx.access().checkByMarking(text(body, "marking"), attributes(body), context(body));
       case "access/describe-requirements" ->
           ctx.access().describeRequirements(text(body, "marking"));
       case "guide/scan" -> ctx.guide().scan(text(body, "text"));
@@ -340,10 +320,7 @@ final class WireCaseDrivers {
                   .evaluate(
                       text(body, "guideId"),
                       strings(body, "selectedRuleIds").toArray(String[]::new));
-      case "guide/describe-rule" ->
-          ctx.guide().describeRule(text(body, "ruleId"), optional(body, "guideId"));
       case "guide/view" -> ctx.guide().view(optional(body, "guideId"));
-      case "guide/filter-rules" -> ctx.guide().filterRules(text(body, "query"));
       case "crosswalk/translate" ->
           body.has("assertions")
               ? ctx.crosswalk().translate(text(body, "crosswalkId"), facts(body))
@@ -379,11 +356,7 @@ final class WireCaseDrivers {
         List<Map.Entry<String, Object>> entries = new ArrayList<>(attributes(body).entrySet());
         java.util.Collections.reverse(entries);
         for (var entry : entries) reversed.put(entry.getKey(), entry.getValue());
-        return ctx.access()
-            .checkByMarking(
-                text(body, "marking"),
-                reversed,
-                body.has("context") ? Json.toMap(body.getAsJsonObject("context")) : null);
+        return ctx.access().checkByMarking(text(body, "marking"), reversed, context(body));
       }
       default -> throw new AssertionError("unsupported variant " + variant);
     }
@@ -425,8 +398,8 @@ final class WireCaseDrivers {
     return body.has(name) ? text(body, name) : null;
   }
 
-  private static String context(JsonObject body) {
-    return body.has("context") ? body.get("context").toString() : null;
+  private static Map<String, Object> context(JsonObject body) {
+    return body.has("context") ? Json.toMap(body.getAsJsonObject("context")) : null;
   }
 
   private static GuideRuleSelection[] selections(JsonObject body) {

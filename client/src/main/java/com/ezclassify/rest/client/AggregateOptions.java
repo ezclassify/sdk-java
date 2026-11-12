@@ -1,29 +1,53 @@
 package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.ProcessingContext;
+import java.util.Objects;
 
 /**
  * Immutable choices for one aggregate operation.
  *
  * <p>Null omits an option; empty lists and false remain explicit wire choices.
- *
- * @param inputFormat The declared input view or form; null lets the server recognize it.
- * @param outputFormat The declared output address; null uses the server default.
- * @param surface The declared surface; null leaves the server default.
- * @param context The caller-supplied marking role and whole-marking context.
  */
-public record AggregateOptions(
-    String inputFormat, String outputFormat, String surface, ProcessingContext context) {
-  /**
-   * Snapshot caller-owned collections and nested contract values.
-   *
-   * @param inputFormat The declared input view or form; null lets the server recognize it.
-   * @param outputFormat The declared output address; null uses the server default.
-   * @param surface The declared surface; null leaves the server default.
-   * @param context The caller-supplied marking role and whole-marking context.
-   */
-  public AggregateOptions {
+public final class AggregateOptions {
+  private final String inputFormat;
+  private final String outputFormat;
+  private final String surface;
+  private final ProcessingContext context;
+
+  private AggregateOptions(
+      String inputFormat, String outputFormat, String surface, ProcessingContext context) {
     context = OptionSnapshots.context(context);
+    this.inputFormat = inputFormat;
+    this.outputFormat = outputFormat;
+    this.surface = surface;
+    this.context = context;
+  }
+
+  /**
+   * The declared input view or form; null lets the server recognize it.
+   *
+   * @return the option, or null when omitted
+   */
+  public String inputFormat() {
+    return inputFormat;
+  }
+
+  /**
+   * The declared output address; null uses the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String outputFormat() {
+    return outputFormat;
+  }
+
+  /**
+   * The declared surface; null leaves the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String surface() {
+    return surface;
   }
 
   /**
@@ -31,9 +55,36 @@ public record AggregateOptions(
    *
    * @return the option, or null when omitted
    */
-  @Override
   public ProcessingContext context() {
     return OptionSnapshots.context(context);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) return true;
+    if (!(other instanceof AggregateOptions that)) return false;
+    return Objects.equals(inputFormat, that.inputFormat)
+        && Objects.equals(outputFormat, that.outputFormat)
+        && Objects.equals(surface, that.surface)
+        && Objects.equals(context, that.context);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(inputFormat, outputFormat, surface, context);
+  }
+
+  @Override
+  public String toString() {
+    return "AggregateOptions[inputFormat="
+        + inputFormat
+        + ", outputFormat="
+        + outputFormat
+        + ", surface="
+        + surface
+        + ", context="
+        + context
+        + "]";
   }
 
   /**
