@@ -3163,7 +3163,7 @@ public final class com.ezclassify.rest.contract.RuleConditionOperator extends co
   public static final com.ezclassify.rest.contract.RuleConditionOperator EVERY_HAS_CONCEPT;
   public static final com.ezclassify.rest.contract.RuleConditionOperator HAS_CONCEPT;
   public static final com.ezclassify.rest.contract.RuleConditionOperator HAS_CONTENT;
-  public static final com.ezclassify.rest.contract.RuleConditionOperator MIN_ORDER;
+  public static final com.ezclassify.rest.contract.RuleConditionOperator MIN_RANK;
   public static final com.ezclassify.rest.contract.RuleConditionOperator NOT_HAS_CONCEPT;
   public static final com.ezclassify.rest.contract.RuleConditionOperator SHARES_CONCEPT_WITH;
   public static final com.ezclassify.rest.contract.RuleConditionOperator SUBSET_OF;
@@ -3181,7 +3181,7 @@ public final class com.ezclassify.rest.contract.RuleConditionOperator$Value exte
   public static final com.ezclassify.rest.contract.RuleConditionOperator$Value EVERY_HAS_CONCEPT;
   public static final com.ezclassify.rest.contract.RuleConditionOperator$Value HAS_CONCEPT;
   public static final com.ezclassify.rest.contract.RuleConditionOperator$Value HAS_CONTENT;
-  public static final com.ezclassify.rest.contract.RuleConditionOperator$Value MIN_ORDER;
+  public static final com.ezclassify.rest.contract.RuleConditionOperator$Value MIN_RANK;
   public static final com.ezclassify.rest.contract.RuleConditionOperator$Value NOT_HAS_CONCEPT;
   public static final com.ezclassify.rest.contract.RuleConditionOperator$Value SHARES_CONCEPT_WITH;
   public static final com.ezclassify.rest.contract.RuleConditionOperator$Value SUBSET_OF;
