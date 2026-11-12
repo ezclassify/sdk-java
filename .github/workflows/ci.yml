@@ -79,6 +79,23 @@ jobs:
       - name: Workflow location guards follow repository policy
         run: node scripts/check-workflow-location-guards.mjs
 
+      # Quarantine gate: no third-party artifact this build uses may be newer than
+      # seven days. It runs before the build. One Maven run only resolves and
+      # lists the closure: every scope of every reactor module, every build
+      # plugin and each plugin's own dependencies. Maven itself and the two
+      # listing plugins pinned here are the only third-party code that runs
+      # first. The generator toolchain is read from its lockfile before the
+      # build's `npm ci` installs it.
+      - name: Third-party dependencies clear the seven-day quarantine
+        run: |
+          ./mvnw org.codehaus.mojo:license-maven-plugin:2.7.1:aggregate-add-third-party \
+            org.apache.maven.plugins:maven-dependency-plugin:3.11.0:resolve-plugins \
+            '-Dlicense.outputDirectory=${maven.multiModuleProjectDirectory}/target/dependency-age' \
+            -Dlicense.thirdPartyFilename=dependencies.txt \
+            '-DoutputFile=${maven.multiModuleProjectDirectory}/target/dependency-age/plugins.txt' \
+            -DappendOutput=true --batch-mode --no-transfer-progress -q
+          node scripts/check-dependency-age.mjs
+
       - name: Build and test (Maven multi-module)
         run: ./mvnw verify --batch-mode --no-transfer-progress
 
@@ -133,12 +150,6 @@ jobs:
           ./mvnw org.codehaus.mojo:license-maven-plugin:2.7.1:aggregate-add-third-party \
             -Dlicense.excludedScopes=test,provided --batch-mode --no-transfer-progress -q
           node scripts/gen-notices.mjs --check
-
-      # Quarantine gate: no third-party artifact in the production closure or the
-      # generator toolchain lockfile may be newer than seven days. It reads the
-      # closure report the license step above just wrote.
-      - name: Third-party dependencies clear the seven-day quarantine
-        run: node scripts/check-dependency-age.mjs
 
       # skipNotDeployed=false because the central-publishing-maven-plugin
       # replaces the default maven-deploy-plugin, which the CycloneDX plugin
