@@ -1,4 +1,4 @@
-.PHONY: regen test test-verbose build clean distclean conformance-server api-surface check-api-surface check-architecture check-workflows check-notices notices
+.PHONY: regen test test-verbose build clean distclean conformance-server api-surface check-api-surface check-architecture check-workflows check-notices check-dependency-age notices
 
 # Generation consumes the frozen, provenance-stamped spec bundle. `npm ci`
 # installs only the pinned YAML parser. There is deliberately no local
@@ -68,6 +68,13 @@ check-workflows:
 #   they run standalone; CI runs them alongside the workflow-guard tests.
 check-notices:
 	node --test scripts/gen-notices.test.mjs
+
+# check-dependency-age: refuse third-party artifacts published inside the seven-day
+#   window. Needs the closure report from the license-maven-plugin (see
+#   check-notices); its own tests run standalone with a local stand-in registry.
+check-dependency-age:
+	node --test scripts/check-dependency-age.test.mjs
+	node scripts/check-dependency-age.mjs
 
 # notices: refresh the generated closure section of THIRD-PARTY-NOTICES.md
 #   from the current production dependency set. CI runs the same pair in

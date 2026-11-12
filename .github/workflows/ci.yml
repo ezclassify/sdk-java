@@ -74,7 +74,7 @@ jobs:
       # what they refuse, so their own tests run here rather than sitting in the
       # tree unexecuted.
       - name: Repository policy scripts behave as specified
-        run: node --test scripts/check-workflow-location-guards.test.mjs scripts/gen-notices.test.mjs scripts/check-signoff.test.mjs
+        run: node --test scripts/check-workflow-location-guards.test.mjs scripts/gen-notices.test.mjs scripts/check-signoff.test.mjs scripts/check-dependency-age.test.mjs
 
       - name: Workflow location guards follow repository policy
         run: node scripts/check-workflow-location-guards.mjs
@@ -133,6 +133,12 @@ jobs:
           ./mvnw org.codehaus.mojo:license-maven-plugin:2.7.1:aggregate-add-third-party \
             -Dlicense.excludedScopes=test,provided --batch-mode --no-transfer-progress -q
           node scripts/gen-notices.mjs --check
+
+      # Quarantine gate: no third-party artifact in the production closure or the
+      # generator toolchain lockfile may be newer than seven days. It reads the
+      # closure report the license step above just wrote.
+      - name: Third-party dependencies clear the seven-day quarantine
+        run: node scripts/check-dependency-age.mjs
 
       # skipNotDeployed=false because the central-publishing-maven-plugin
       # replaces the default maven-deploy-plugin, which the CycloneDX plugin

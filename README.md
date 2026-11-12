@@ -1,7 +1,7 @@
 # <img src="assets/icon.svg" alt="" width="32"> EzClassify Java SDK
 
-[![CI](https://github.com/ezclassify/client-java/actions/workflows/ci.yml/badge.svg)](https://github.com/ezclassify/client-java/actions/workflows/ci.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/com.ezclassify.rest/client?label=com.ezclassify.rest%3Aclient)](https://central.sonatype.com/artifact/com.ezclassify.rest/client)
+[![CI](https://github.com/ezclassify/sdk-java/actions/workflows/ci.yml/badge.svg)](https://github.com/ezclassify/sdk-java/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.ezclassify/ezclassify-rest-client?label=com.ezclassify%3Aezclassify-rest-client)](https://central.sonatype.com/artifact/com.ezclassify/ezclassify-rest-client)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Java 17+](https://img.shields.io/badge/java-17%2B-orange.svg)](pom.xml)
 
@@ -17,8 +17,8 @@ health and Context discovery use the deployment endpoint.
 
 ```xml
 <dependency>
-  <groupId>com.ezclassify.rest</groupId>
-  <artifactId>client</artifactId>
+  <groupId>com.ezclassify</groupId>
+  <artifactId>ezclassify-rest-client</artifactId>
   <version>1.0.0</version>
 </dependency>
 ```
@@ -214,7 +214,7 @@ The description is read once when the handle connects and held, not cached with 
 
 ## Modules
 
-The SDK ships as one artifact, `com.ezclassify.rest:client`. It holds the HTTP client in
+The SDK ships as one artifact, `com.ezclassify:ezclassify-rest-client`. It holds the HTTP client in
 `com.ezclassify.rest.client` and the generated wire types in `com.ezclassify.rest.contract`.
 The Javadoc reference covers both packages. Internal transport helpers and repository tools
 are outside that public API.
