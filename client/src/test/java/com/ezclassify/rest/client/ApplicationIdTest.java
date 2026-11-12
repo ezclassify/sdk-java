@@ -90,7 +90,7 @@ class ApplicationIdTest {
       assertEquals(4, stub.requestCount());
       first.ping();
       assertEquals("Bearer first-user", header(stub, "Authorization"));
-      assertEquals(APP_ID, header(stub, HEADER));
+      assertNull(header(stub, HEADER));
       assertNull(header(stub, "X-EzClassify-Context-Token"));
     }
   }
@@ -103,7 +103,7 @@ class ApplicationIdTest {
   }
 
   @Test
-  void applicationIdReachesEveryRequest() throws Exception {
+  void applicationIdReachesContextRoutesButNotHealth() throws Exception {
     try (var stub =
             new ClientStubServer(
                 Map.of(
@@ -120,7 +120,7 @@ class ApplicationIdTest {
                 "1.0.0");
         var root = new EzClassifyClient(stub.url(), application())) {
       root.ping();
-      assertCredential(stub);
+      assertNull(header(stub, HEADER));
       assertEquals(List.of("sample"), root.listContexts());
       assertCredential(stub);
       assertEquals(List.of("1.0.0"), root.listContextVersions("sample"));

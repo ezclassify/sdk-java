@@ -6,12 +6,12 @@ import java.net.http.HttpRequest;
  * Caller credentials and the calling application's id.
  *
  * <p>The tokens are secrets; the application id is not. It names the application for the
- * deployment's per-application usage reporting, authorizes nothing, and is sent on every request as
- * the {@code x-ezclassify-application-id} header. A request without it, or with an id the
- * deployment has not registered, is served the same way.
+ * deployment's per-application usage reporting, authorizes nothing, and is sent on Context routes
+ * as the {@code x-ezclassify-application-id} header; health checks do not carry it. A request
+ * without it, or with an id the deployment has not registered, is served the same way.
  *
- * @param accessToken bearer token identifying the caller, or {@code null} when authentication is
- *     not required by the application policy
+ * @param accessToken bearer token identifying the caller, or {@code null} when the deployment does
+ *     not require one
  * @param contextToken signed token authorizing Context operations, or {@code null} when not
  *     required by the Runtime's configured authorization policy
  * @param applicationId the id this application is registered under, or {@code null}; nonempty
@@ -100,7 +100,7 @@ public record RestClientCredentials(String accessToken, String contextToken, Str
   }
 
   /**
-   * Apply the caller token, the Context token on Context routes, and the application id.
+   * Apply the caller token, and on Context routes the Context token and the application id.
    *
    * @param request request builder to receive the headers
    * @param contextPath whether this request addresses the Context route family
@@ -110,6 +110,8 @@ public record RestClientCredentials(String accessToken, String contextToken, Str
     if (contextPath && contextToken != null) {
       request.header("x-ezclassify-context-token", contextToken);
     }
-    if (applicationId != null) request.header("x-ezclassify-application-id", applicationId);
+    if (contextPath && applicationId != null) {
+      request.header("x-ezclassify-application-id", applicationId);
+    }
   }
 }
