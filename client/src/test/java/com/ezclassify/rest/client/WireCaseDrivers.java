@@ -337,9 +337,9 @@ final class WireCaseDrivers {
 
   /**
    * Call the public method that sends the case's recorded request, departing from it the way a
-   * cache-conformance plan asks. {@code reorderedMembers} supplies the same attributes in the
-   * reverse order, and {@code unsetMember} names a member the recorded request leaves out, which
-   * every driver here already passes as unset.
+   * cache-conformance plan asks. {@code reorderedMembers} sets the same process options on the
+   * builder in the reverse of the recorded member order, and {@code unsetMember} names a member the
+   * recorded request leaves out, which every driver here already passes as unset.
    */
   static Object invoke(WireCorpus.Case c, EzClassifyContext ctx, String variant, String member) {
     if (variant == null) return invoke(c, ctx);
@@ -350,13 +350,21 @@ final class WireCaseDrivers {
         return invoke(c, ctx);
       }
       case "reorderedMembers" -> {
-        if (!c.target().endsWith("/access/check") || !body.has("marking"))
+        if (!c.target().endsWith("/scheme/process"))
           throw new AssertionError("no reordered-member driver for " + c.id());
-        Map<String, Object> reversed = new java.util.LinkedHashMap<>();
-        List<Map.Entry<String, Object>> entries = new ArrayList<>(attributes(body).entrySet());
-        java.util.Collections.reverse(entries);
-        for (var entry : entries) reversed.put(entry.getKey(), entry.getValue());
-        return ctx.access().checkByMarking(text(body, "marking"), reversed, context(body));
+        List<String> names = new ArrayList<>(body.keySet());
+        java.util.Collections.reverse(names);
+        ProcessOptions.Builder options = ProcessOptions.builder();
+        for (String name : names) {
+          switch (name) {
+            case "input" -> {}
+            case "outputFormat" -> options.outputFormat(text(body, name));
+            case "outputs" -> options.outputs(strings(body, name));
+            case "suggestFor" -> options.suggestFor(strings(body, name));
+            default -> throw new AssertionError("no reordered-member driver for " + name);
+          }
+        }
+        return ctx.scheme().process(text(body, "input"), options.build());
       }
       default -> throw new AssertionError("unsupported variant " + variant);
     }
