@@ -27,10 +27,10 @@ Java 17+.
 
 ## Quickstart
 
-Start with the Cedar Valley replay server. It answers with responses recorded from a real EzClassify runtime for a fictional school district, so you can see your integration work before you have a runtime or credentials. Node.js 22 or 24 is needed for the replay server only; the client is plain Java 17+.
+Start with the free developer runtime. It is one container that serves the built-in Contexts, such as `capco-demo` and `cedar-valley`, over real HTTP, with no license, credentials or account. The client is plain Java 17+.
 
 ```sh
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
+docker run --rm -p 3000:8080 ghcr.io/ezclassify/developer-runtime
 ```
 
 Then connect with the normal client. Context `cedar-valley`, version `1.0.0`:
@@ -41,7 +41,7 @@ import com.ezclassify.rest.client.EzClassifyContext;
 
 public class QuickStart {
     public static void main(String[] args) {
-        try (EzClassifyClient client = new EzClassifyClient("http://127.0.0.1:4010")) {
+        try (EzClassifyClient client = new EzClassifyClient("http://localhost:3000")) {
             EzClassifyContext context = client.context("cedar-valley", "1.0.0");
             var result = context.scheme().process("INTERNAL").result();
             System.out.println(result.rendered() + " valid=" + result.valid());
@@ -54,18 +54,18 @@ public class QuickStart {
 INTERNAL valid=true
 ```
 
-The server replays a finite set of recorded requests: `PUBLIC`, `INTERNAL`, `CONFIDENTIAL`, the full district marking, access decisions, guides and a few recorded errors. The [scenario catalog](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server/scenarios/cedar-valley) lists them all. A request nobody recorded gets a 501 diagnostic, which the client raises as an `EzClassifyClientException` with `statusCode() == 501`; the server never computes a new answer.
+`cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
 
 ### Swap to your runtime
 
-When the integration works, point the same code at your runtime. Change the base URL, the Context id and version, and add credentials. Your runtime administrator supplies the endpoint, the caller access token, and the Context token where your deployment requires one.
+When the integration works, point the same code at your runtime. Four values change: the base URL, the Context, your application id and the caller token. Your runtime administrator supplies them, along with the Context token where your deployment requires one.
 
 ```java
 import com.ezclassify.rest.client.EzClassifyClient;
 import com.ezclassify.rest.client.EzClassifyContext;
 import com.ezclassify.rest.client.RestClientCredentials;
 
-var credentials = new RestClientCredentials(accessToken, contextToken);
+var credentials = new RestClientCredentials(accessToken, contextToken, "your-application-id");
 try (EzClassifyClient client = new EzClassifyClient("https://rest-api.example.com", credentials)) {
     System.out.println(client.listContexts());
 
@@ -76,7 +76,7 @@ try (EzClassifyClient client = new EzClassifyClient("https://rest-api.example.co
 }
 ```
 
-Name your application so the deployment can count its requests. The application id is the id your application is registered under. It is not a credential and authorizes nothing, so it can travel with or without tokens:
+The application id in that example is the id your application is registered under; the deployment counts its requests by it. It is not a credential and authorizes nothing, so it can travel with or without tokens:
 
 ```java
 var credentials = new RestClientCredentials(userAccessToken, contextToken, "case-intake-portal");
@@ -233,18 +233,17 @@ versions are unsupported.
 
 ## Demo
 
-[`examples/sdk-tour/`](examples/sdk-tour/) walks ping, validate, process, aggregate, suggest and guide scan. By default it runs against the Cedar Valley replay server from the [quickstart](#quickstart), using inputs that server has recorded. Start the server, then install the reactor artifacts locally and run the example module:
+[`examples/sdk-tour/`](examples/sdk-tour/) walks ping, validate, process, aggregate, suggest and guide scan. It runs against the developer runtime from the [quickstart](#quickstart). Start the runtime, then install the reactor artifacts locally and run the example module:
 
 ```sh
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
-
 ./mvnw install -DskipTests --batch-mode --no-transfer-progress
 ./mvnw -pl examples/sdk-tour exec:java \
     -Dexec.mainClass=com.ezclassify.demo.ClientDemo \
+    -Dexec.args="http://localhost:3000 cedar-valley 1.0.0" \
     --batch-mode --no-transfer-progress
 ```
 
-To run it against a real runtime, pass the base URL, Context id and version as `-Dexec.args="<url> <context> <version>"` and substitute markings that Context recognizes. The tour builds an unauthenticated client, so use a test runtime that permits anonymous requests.
+To run it against your runtime, pass its base URL, Context id and version in `-Dexec.args` the same way and substitute markings that Context recognizes. The tour builds an unauthenticated client, so use a test runtime that permits anonymous requests.
 
 ## Errors and rate limits
 
@@ -288,14 +287,14 @@ try {
 
 ## Integration testing
 
-The replay server from the [quickstart](#quickstart) also records access decisions. Use them to check connectivity, response handling, and access-decision logging with your normal client. Supported requests are listed in the [scenario server guide](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration), and `--auth simulated` accepts a published test bearer if you want to rehearse credentials.
+The developer runtime from the [quickstart](#quickstart) also evaluates access decisions. Use it to check connectivity, response handling, and access-decision logging with your normal client.
 
 ```java
 import com.ezclassify.rest.client.EzClassifyClient;
 import com.ezclassify.rest.client.EzClassifyClientException;
 import java.util.Map;
 
-try (var client = new EzClassifyClient("http://127.0.0.1:4010")) {
+try (var client = new EzClassifyClient("http://localhost:3000")) {
     var ctx = client.context("cedar-valley", "1.0.0");
     var decision = ctx.access().checkByMarking("CONFIDENTIAL", Map.of()).result();
     System.out.println("granted=" + decision.granted());
@@ -314,13 +313,7 @@ resource reference. Apply your log retention and redaction policy to returned
 explanations too. A denied access decision is a successful response with
 `granted: false`; handle transport or authentication failures separately.
 
-Restart with `--scenario transient-error`, `rate-limit`, `unavailable`,
-`slow-response`, `disconnected`, `malformed-json`, or `malformed-envelope` to
-exercise failures on the recorded process request. Clear the client response
-cache or create a new client between runs so an earlier answer does not hide
-the scenario. The guide lists authentication, validation, empty-result, and
-complex access cases. These recordings test your integration, not the
-correctness of a production authorization policy.
+To rehearse transport failures such as a 429, a dropped connection or a malformed body, run the Apache-2.0 [conformance server](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration) (Node.js 22 or 24). It replays recorded failures on demand, which the developer runtime does not produce. Clear the client response cache or create a new client between runs so an earlier answer does not hide the scenario.
 
 ## Reporting issues
 
