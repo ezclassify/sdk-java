@@ -88,9 +88,10 @@ import java.util.Map;
  * never narrows what may be read. A scheme without surfaces names its outputs by format id and
  * writes its default format when none is named. A scheme with surfaces names them by {@code
  * surface/view} address, and when none is named writes each surface in its default for the
- * marking's role: the request's context role when it gives one, otherwise the role recognition
- * decides and reports in {@code recognition.role}. A part and a whole can therefore come back in
- * different views.
+ * marking's role, or alone the one default that writes every other surface's scope beside its own.
+ * A named output is written alone. The role is the request's context role when it gives one,
+ * otherwise the role recognition decides and reports in {@code recognition.role}. A part and a
+ * whole can therefore come back in different views.
  *
  * <p>A {@code surface} names which of the scheme's scopes the input is, for a fragment such as a
  * portion; {@code null} evaluates it as a whole marking.

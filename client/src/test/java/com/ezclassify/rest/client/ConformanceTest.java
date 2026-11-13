@@ -60,7 +60,7 @@ class ConformanceTest {
    * golden: when the vendored bundle is regenerated, update it deliberately in the same commit.
    * Without it, a missing recording or unreadable fixture silently shrinks the suite.
    */
-  private static final int EXPECTED_CASE_COUNT = 122;
+  private static final int EXPECTED_CASE_COUNT = 126;
 
   private static Replayer replayer;
   private static List<TestCase> testCases;
