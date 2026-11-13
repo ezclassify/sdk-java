@@ -2,10 +2,10 @@
 
 `ClientDemo` walks the Java REST client through ping, validate, process, aggregate, suggest, and guide scan. It is part of the Maven reactor, and its smoke test runs against an in-JVM HTTP stub.
 
-By default it runs against the Cedar Valley replay server, which serves recorded responses. Start the server:
+Run it against the free developer runtime. It is one container that serves the built-in Contexts, Cedar Valley among them, over real HTTP, with no license, credentials or account:
 
 ```sh
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
+docker run --rm -p 3000:8080 ghcr.io/ezclassify/developer-runtime
 ```
 
 Then run the tour from the repository root, in another terminal:
@@ -14,14 +14,15 @@ Then run the tour from the repository root, in another terminal:
 ./mvnw install -DskipTests --batch-mode --no-transfer-progress
 ./mvnw -pl examples/sdk-tour exec:java \
     -Dexec.mainClass=com.ezclassify.demo.ClientDemo \
+    -Dexec.args="http://localhost:3000 cedar-valley 1.0.0" \
     --batch-mode --no-transfer-progress
 ```
 
-The first command installs the reactor artifacts into your local Maven repository so the example can resolve its sibling dependencies. The checked-in wrapper supplies Maven 3.10.0; Java 17+ and Node.js 22 or 24 are required to build. The replay server needs Node.js 22 or 24 too; the tour itself does not.
+The first command installs the reactor artifacts into your local Maven repository so the example can resolve its sibling dependencies. The checked-in wrapper supplies Maven 3.10.0; Java 17+ and Node.js 22 or 24 are required to build. The tour itself needs only Java.
 
-The tour uses inputs the replay server has recorded, so it runs as written against `http://127.0.0.1:4010`, Context `cedar-valley` version `1.0.0`. The replay server answers any request it has not recorded with HTTP 501, so `explain`, scheme `scan` and your own markings need a real runtime.
+The arguments are the runtime's base URL, the Context id and its version. The tour's markings and guide text belong to Context `cedar-valley`, a fictional school district policy, so it runs as written against the developer runtime. `GET /v1/ctx` on the runtime lists every built-in Context.
 
-To run against a real runtime, pass its base URL, Context id and version as arguments and substitute markings that Context recognizes:
+To run against your own runtime, pass its base URL, Context id and version and substitute markings that Context recognizes:
 
 ```sh
 ./mvnw -pl examples/sdk-tour exec:java \
