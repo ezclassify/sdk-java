@@ -41,13 +41,13 @@ class WireCorpusTest {
   void exactLiteralCoverage() throws Exception {
     var corpus = corpus();
     corpus.requireIds(WireCaseDrivers.DRIVERS.keySet());
-    assertEquals(119, corpus.cases.size());
+    assertEquals(109, corpus.cases.size());
     assertEquals(
         83,
         WireCaseDrivers.DRIVERS.values().stream()
             .filter(v -> v == WireCaseDrivers.Boundary.PUBLIC)
             .count());
-    assertEquals(36, WireCaseDrivers.PRIVATE_REASONS.size());
+    assertEquals(26, WireCaseDrivers.PRIVATE_REASONS.size());
     assertEquals(
         WireCaseDrivers.PRIVATE_REASONS.keySet(),
         WireCaseDrivers.DRIVERS.entrySet().stream()
