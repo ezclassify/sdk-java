@@ -47,10 +47,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  * not declare with a 400, so every request a call puts on the wire, body-carrying or not, may name
  * only the query parameters the contract declares for that operation.
  *
- * <p>The failure this catches is invisible to the rest of the suite. The contract renamed {@code
- * format} and {@code scope} to {@code outputFormat} and {@code surface} on the operations that read
- * a marking, and a body-substring test that asserts whatever name the client sends stays green
- * either way.
+ * <p>The failure this catches is invisible to the rest of the suite: a body-substring test asserts
+ * whatever name the client sends, so it stays green when that name is one the contract does not
+ * declare.
  */
 class RequestSchemaConformanceTest {
 
@@ -623,7 +622,7 @@ class RequestSchemaConformanceTest {
   }
 
   @Test
-  void validatorAcceptsTheRenamedFields() {
+  void validatorAcceptsACurrentBody() {
     List<String> errors =
         SPEC.validateRequest(
             "post",
