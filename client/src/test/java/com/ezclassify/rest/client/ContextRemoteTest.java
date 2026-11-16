@@ -12,8 +12,8 @@ import com.ezclassify.rest.contract.CheckCoverageResult;
 import com.ezclassify.rest.contract.ConceptDescription;
 import com.ezclassify.rest.contract.ConceptNoticeType;
 import com.ezclassify.rest.contract.ConceptView;
+import com.ezclassify.rest.contract.ContextCrosswalkDescriptor;
 import com.ezclassify.rest.contract.ContextCrosswalkTranslationResult;
-import com.ezclassify.rest.contract.ContextDocumentAccessAssessmentResult;
 import com.ezclassify.rest.contract.ContextDocumentAuditResult;
 import com.ezclassify.rest.contract.DiffResult;
 import com.ezclassify.rest.contract.DocumentAuditReport;
@@ -21,9 +21,9 @@ import com.ezclassify.rest.contract.DocumentOverallVerdict;
 import com.ezclassify.rest.contract.DocumentResponseProfile;
 import com.ezclassify.rest.contract.EvaluationResult;
 import com.ezclassify.rest.contract.ExplanationTrace;
-import com.ezclassify.rest.contract.FilterResult;
 import com.ezclassify.rest.contract.FixAction;
 import com.ezclassify.rest.contract.GuideBreakdownEntry;
+import com.ezclassify.rest.contract.GuideRuleSelection;
 import com.ezclassify.rest.contract.GuideScanResult;
 import com.ezclassify.rest.contract.GuideViewResponse;
 import com.ezclassify.rest.contract.Notice;
@@ -33,7 +33,6 @@ import com.ezclassify.rest.contract.ProcessingRole;
 import com.ezclassify.rest.contract.RecognitionCorrectionReason;
 import com.ezclassify.rest.contract.RecognitionStatus;
 import com.ezclassify.rest.contract.RenderPreservation;
-import com.ezclassify.rest.contract.RuleDescription;
 import com.ezclassify.rest.contract.ScanResponseBody;
 import com.ezclassify.rest.contract.ScanResult;
 import com.ezclassify.rest.contract.ScanStatus;
@@ -108,7 +107,7 @@ class ContextRemoteTest {
             + ASSESSMENT_OF_H
             + ",\"recognition\":{\"status\":\"complete\",\"inputFormat\":\"marking/long\",\"role\":\"whole\",\"surface\":\"marking\",\"unmatched\":[],"
             + "\"corrections\":[{\"start\":0,\"end\":1,\"original\":\"h\",\"replacement\":\"H\",\"reason\":\"case\"}]},"
-            + "\"notices\":[{\"conceptId\":\"ORG\",\"conceptName\":\"Organization Only\",\"type\":\"handling\",\"text\":\"controlled\",\"required\":true}],"
+            + "\"notices\":[{\"conceptId\":\"ORG\",\"conceptName\":\"Organization Only\",\"type\":\"warning\",\"text\":\"controlled\",\"required\":true}],"
             + "\"proposedFixes\":[],"
             + "\"renders\":{\"marking/long\":{\"rendered\":\"H\","
             + ASSESSMENT_OF_H
@@ -146,16 +145,15 @@ class ContextRemoteTest {
         "/scheme/aggregate",
         "{\"valid\":true,\"rendered\":\"H\",\"assertions\":[],\"errors\":[],\"warnings\":[],"
             + "\"appliedFixes\":[],\"proposedFixes\":[],"
-            + "\"notices\":[{\"conceptId\":\"ORG\",\"conceptName\":\"Organization Only\",\"type\":\"handling\",\"text\":\"controlled\",\"required\":true}]}");
+            + "\"notices\":[{\"conceptId\":\"ORG\",\"conceptName\":\"Organization Only\",\"type\":\"warning\",\"text\":\"controlled\",\"required\":true}]}");
     ROUTES.put(
         "/scheme/scan",
         "{\"results\":[{\"marking\":\"H\",\"start\":5,\"end\":6,\"type\":\"marking/short\",\"wrapped\":true,\"role\":\"part\",\"result\":{\"valid\":true,\"rendered\":\"H\",\"inputWasValid\":true,\"assertions\":[],\"errors\":[],\"warnings\":[],\"appliedFixes\":[],"
             + ASSESSMENT_OF_NOTHING
-            + ",\"recognition\":{\"status\":\"complete\",\"inputFormat\":\"marking/short\",\"role\":\"part\",\"surface\":\"marking\",\"unmatched\":[]},\"notices\":[]}}],\"limits\":{\"status\":\"complete\",\"regionsFound\":1}}");
+            + ",\"recognition\":{\"status\":\"complete\",\"inputFormat\":\"marking/short\",\"role\":\"part\",\"surface\":\"marking\",\"unmatched\":[]},\"notices\":[]}}],\"unread\":[],\"limits\":{\"status\":\"complete\",\"regionsFound\":1}}");
     ROUTES.put(
         "/scheme/render",
         "{\"result\":\"LEVEL-HIGH\",\"assessment\":{\"emitted\":[{\"conceptId\":\"L_H\",\"categoryId\":\"level\",\"value\":\"A&B\"}],\"omitted\":[],\"collapsed\":[],\"conflicts\":[],\"unrepresentable\":[]}}");
-    ROUTES.put("/scheme/normalize", "{\"result\":\"LEVEL-HIGH\"}");
     ROUTES.put(
         "/scheme/check-coverage",
         "{\"covered\":false,\"missing\":[],\"missingLabels\":[\"TS\"],\"excess\":[],\"excessLabels\":[],\"rendered\":\"TS\"}");
@@ -166,14 +164,11 @@ class ContextRemoteTest {
         "/scheme/diff",
         "{\"added\":[{\"conceptId\":\"A\",\"categoryId\":\"c\",\"confidence\":\"certain\",\"source\":\"parse\"}],\"removed\":[],\"common\":[]}");
     ROUTES.put(
-        "/scheme/filter-concepts",
-        "{\"visibleIds\":[\"a\",\"b\"],\"categoryCounts\":{\"level\":{\"visible\":2,\"total\":5}},\"total\":{\"visible\":2,\"total\":9}}");
-    ROUTES.put(
         "/scheme/notices",
-        "[{\"conceptId\":\"ORG\",\"conceptName\":\"Organization Only\",\"type\":\"handling\",\"text\":\"controlled\",\"required\":true}]");
+        "[{\"conceptId\":\"ORG\",\"conceptName\":\"Organization Only\",\"type\":\"warning\",\"text\":\"controlled\",\"required\":true}]");
     ROUTES.put(
         "/scheme/view",
-        "{\"id\":\"s\",\"name\":\"Scheme\",\"description\":\"d\",\"categories\":[{\"id\":\"level\",\"label\":\"Level\",\"items\":[{\"id\":\"H\",\"name\":\"High\","
+        "{\"id\":\"s\",\"name\":\"Scheme\",\"description\":\"d\",\"marking\":\"H\",\"categories\":[{\"id\":\"level\",\"label\":\"Level\",\"items\":[{\"id\":\"H\",\"name\":\"High\","
             + "\"views\":{\"default\":\"H\"},\"aliases\":[],\"categories\":[\"level\"],\"parents\":[],\"position\":2}]}],"
             + "\"uncategorized\":[]}");
     ROUTES.put(
@@ -191,43 +186,26 @@ class ContextRemoteTest {
             + "\"contributingBreakdown\":[{\"rule\":{\"artifact\":{\"kind\":\"guide\",\"id\":\"g1\",\"version\":\"1.0.0\",\"digest\":\"sha256:g\"},\"ruleId\":\"r1\",\"ruleDigest\":\"sha256:r1\"},\"outcome\":{\"rendered\":\"H\"},"
             + "\"isComputed\":true,\"wasOverridden\":false}]}");
     ROUTES.put(
-        "/guide/filter-rules",
-        "{\"visibleIds\":[\"r1\"],\"categoryCounts\":{},\"total\":{\"visible\":1,\"total\":3}}");
-    ROUTES.put(
-        "/guide/describe-rule",
-        "{\"rule\":{\"artifact\":{\"kind\":\"guide\",\"id\":\"g1\",\"version\":\"1.0.0\",\"digest\":\"sha256:g1\"},\"ruleId\":\"r1\",\"ruleDigest\":\"sha256:r1\",\"source\":{\"providerId\":\"guide-fixture-provider\",\"reproducibility\":\"reproducible\",\"snapshotId\":\"snapshot-r1\"}},\"guide\":{\"kind\":\"guide\",\"id\":\"g1\",\"version\":\"1.0.0\",\"digest\":\"sha256:g1\"},\"name\":\"Rule\",\"description\":\"Qualified guide rule\",\"outcomeText\":\"marks H\",\"whenText\":\"r2 is active\",\"isComputed\":false,\"dependsOn\":[{\"artifact\":{\"kind\":\"guide\",\"id\":\"g2\",\"version\":\"1.0.0\",\"digest\":\"sha256:g2\"},\"ruleId\":\"r2\",\"ruleDigest\":\"sha256:r2\",\"source\":{\"providerId\":\"guide-fixture-provider\",\"reproducibility\":\"reproducible\",\"snapshotId\":\"snapshot-r2\"}}],\"overrides\":[{\"artifact\":{\"kind\":\"guide\",\"id\":\"g3\",\"version\":\"1.0.0\",\"digest\":\"sha256:g3\"},\"ruleId\":\"r3\",\"ruleDigest\":\"sha256:r3\",\"source\":{\"providerId\":\"guide-fixture-provider\",\"reproducibility\":\"reproducible\",\"snapshotId\":\"snapshot-r3\"}}],\"lines\":[\"Rule\",\"marks H\"]}");
-    ROUTES.put(
         "/guide/view",
-        "{\"id\":\"g1\",\"name\":\"Guide\",\"description\":\"\",\"categories\":[],\"uncategorized\":[{\"id\":\"r1\","
+        "{\"id\":\"g1\",\"name\":\"Guide\",\"description\":\"\",\"marking\":\"H\",\"categories\":[],\"uncategorized\":[{\"id\":\"r1\","
             + "\"name\":\"Rule 1\",\"outcomeText\":\"marks H\",\"isComputed\":false,\"keywords\":[],\"matcherLabels\":[],"
             + "\"dependsOn\":[],\"dependsOnNames\":[],\"overrides\":[],\"overrideNames\":[]}]}");
     ROUTES.put(
         "/access/check",
-        "{\"granted\":true,\"provenance\":{\"providerId\":\"broker:access-rule:srcref:x\",\"attribution\":{\"name\":\"Policy source\",\"license\":\"internal\",\"licenseUrl\":null,\"citation\":\"Policy source snapshot\"},\"reproducibility\":\"reproducible\",\"snapshotId\":\"snap-7\",\"locator\":\"memory://access\"},\"rules\":[{\"activation\":{\"matched\":true,\"assertions\":[],\"contextPaths\":[]},\"comparisons\":[{\"left\":{\"source\":\"subject\",\"path\":\"clearance\",\"categoryId\":null,\"assertions\":[],\"value\":\"HIGH\"},\"operator\":\"equals\",\"right\":{\"source\":\"literal\",\"path\":null,\"categoryId\":null,\"assertions\":[],\"value\":\"HIGH\"},\"matched\":true,\"missing\":[]}],\"granted\":true,\"name\":\"Clr\",\"reason\":\"clearance matched\",\"rule\":{\"artifact\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"ruleId\":\"r1\",\"ruleDigest\":\"sha256:r1\",\"source\":{\"providerId\":\"broker:access-rule:srcref:x\",\"reproducibility\":\"reproducible\",\"snapshotId\":\"snap-7\"}},\"ruleIndex\":0,\"skipped\":false}]}");
+        "{\"granted\":true,\"provenance\":{\"providerId\":\"broker:access-rule:srcref:x\",\"attribution\":{\"name\":\"Policy source\",\"license\":\"internal\",\"licenseUrl\":null,\"citation\":\"Policy source snapshot\"},\"reproducibility\":\"reproducible\",\"snapshotId\":\"snap-7\",\"locator\":\"memory://access\"},\"rules\":[{\"activation\":{\"matched\":true,\"assertions\":[],\"contextPaths\":[]},\"comparisons\":[{\"left\":{\"source\":\"subject\",\"path\":\"clearance\",\"categoryId\":null,\"assertions\":[],\"value\":\"HIGH\"},\"operator\":\"equals\",\"right\":{\"source\":\"literal\",\"path\":null,\"categoryId\":null,\"assertions\":[],\"value\":\"HIGH\"},\"matched\":true,\"missing\":[]}],\"granted\":true,\"name\":\"Clr\",\"reason\":\"clearance matched\",\"rule\":{\"artifact\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"ruleId\":\"r1\",\"ruleDigest\":\"sha256:r1\",\"source\":{\"providerId\":\"broker:access-rule:srcref:x\",\"reproducibility\":\"reproducible\",\"snapshotId\":\"snap-7\"}},\"ruleIndex\":0,\"skipped\":false}],\"warnings\":[]}");
     ROUTES.put(
         "/access/describe-requirements",
         "{\"marking\":\"RED//ORG\",\"assertions\":[],\"assertionDisplays\":[],\"access\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"scheme\":{\"kind\":\"scheme\",\"id\":\"s\",\"version\":\"1.0.0\",\"digest\":\"sha256:scheme\"},\"appliedRules\":[{\"artifact\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"ruleId\":\"r1\",\"ruleDigest\":\"sha256:r1\",\"source\":null}],\"rules\":[],\"combinedRequirementText\":\"Org members only\",\"combinedAttributesNeeded\":[\"membership\"],\"lines\":[]}");
     ROUTES.put(
-        "/access/describe-rule",
-        "{\"rule\":{\"artifact\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"ruleId\":\"r1\",\"ruleDigest\":\"sha256:r1\",\"source\":null},\"access\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"scheme\":{\"kind\":\"scheme\",\"id\":\"s\",\"version\":\"1.0.0\",\"digest\":\"sha256:scheme\"},\"name\":\"ORG\",\"description\":\"Organization membership\",\"requirementText\":\"Org members only\",\"whenText\":\"ORG applies\",\"attributesNeeded\":[\"membership\"],\"dependsOn\":[],\"overrides\":[],\"lines\":[]}");
-    ROUTES.put(
         "/access/rules",
         "{\"rules\":[{\"rule\":{\"artifact\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"ruleId\":\"r1\",\"ruleDigest\":\"sha256:r1\"},\"access\":{\"kind\":\"access\",\"id\":\"ap\",\"version\":\"1.0.0\",\"digest\":\"sha256:access\"},\"scheme\":{\"kind\":\"scheme\",\"id\":\"s\",\"version\":\"1.0.0\",\"digest\":\"sha256:scheme\"},\"name\":\"ORG\",\"requirementText\":\"Org members only\",\"attributesNeeded\":[\"membership\"],\"dependsOn\":[],\"overrides\":[],\"lines\":[]}]}");
+    ROUTES.put(
+        "/crosswalk/describe",
+        "{\"crosswalks\":[{\"id\":\"a-to-b\",\"version\":\"1.0.0\",\"name\":\"A to B\",\"source\":\"a\",\"target\":\"b\",\"mappings\":[{\"id\":\"open\",\"source\":{\"categoryId\":\"level\",\"conceptId\":\"OPEN\"},\"targets\":[{\"categoryId\":\"level\",\"conceptId\":\"GREEN\"}],\"disposition\":\"carry\",\"reason\":\"Equivalent.\"}],\"selections\":[]}]}");
     ROUTES.put(
         "/crosswalk/translate",
         "{\"crosswalk\":{\"kind\":\"crosswalk\",\"id\":\"state-to-district\",\"version\":\"1.0.0\",\"digest\":\"sha256:crosswalk\"},\"sourceScheme\":{\"kind\":\"scheme\",\"id\":\"state\",\"version\":\"1.0.0\",\"digest\":\"sha256:state\"},\"targetScheme\":{\"kind\":\"scheme\",\"id\":\"district\",\"version\":\"1.0.0\",\"digest\":\"sha256:district\"},\"source\":{\"valid\":true,\"inputWasValid\":true,\"rendered\":\"H\",\"assertions\":[],\"errors\":[],\"warnings\":[],\"appliedFixes\":[],\"assessment\":{\"emitted\":[],\"omitted\":[],\"collapsed\":[],\"conflicts\":[],\"unrepresentable\":[]},\"notices\":[]},\"outcomes\":[],\"selections\":[],\"target\":{\"valid\":true,\"inputWasValid\":false,\"rendered\":\"D-H\",\"assertions\":[],\"errors\":[],\"warnings\":[],\"appliedFixes\":[],\"assessment\":{\"emitted\":[],\"omitted\":[],\"collapsed\":[],\"conflicts\":[],\"unrepresentable\":[]},\"notices\":[]},\"status\":\"complete\"}");
     ROUTES.put("/document/audit", documentAuditJson());
-    ROUTES.put(
-        "/document/assess-access",
-        "{\"audit\":"
-            + documentAuditJson()
-            + ",\"authored\":"
-            + scenarioJson("authored", false, "granted")
-            + ",\"authoritative\":"
-            + scenarioJson("authoritative", false, "denied")
-            + ",\"projected\":"
-            + scenarioJson("projected", true, "not-evaluated")
-            + "}");
   }
 
   @BeforeAll
@@ -250,178 +228,9 @@ class ContextRemoteTest {
     return EzClassifyClient.connect(baseUrl, "acme-ctx", "1.0.0");
   }
 
-  private static final class MutableWireNumber extends Number {
-    private int value;
-
-    private MutableWireNumber(int value) {
-      this.value = value;
-    }
-
-    @Override
-    public int intValue() {
-      return value;
-    }
-
-    @Override
-    public long longValue() {
-      return value;
-    }
-
-    @Override
-    public float floatValue() {
-      return value;
-    }
-
-    @Override
-    public double doubleValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return Integer.toString(value);
-    }
-  }
-
-  @Test
-  void numericMetadataMutationCannotChangePublicRequestOrCacheIdentity() {
-    var custom = new MutableWireNumber(7);
-    var atomic = new java.util.concurrent.atomic.AtomicInteger(13);
-    var json = new com.google.gson.JsonObject();
-    json.add("atomic", new com.google.gson.JsonPrimitive(atomic));
-    var metadata = new java.util.LinkedHashMap<String, Object>();
-    metadata.put("custom", custom);
-    metadata.put("json", json);
-    var fact =
-        new Assertion(
-            "level",
-            "L_H",
-            AssertionConfidence.CERTAIN,
-            null,
-            metadata,
-            null,
-            null,
-            "user",
-            null,
-            null);
-    var whole =
-        new ProcessingContext(
-            ProcessingRole.PART, new ProcessingContext.PartOf("H", List.of(fact)));
-    var process = ProcessOptions.builder().assertions(List.of(fact)).build();
-    var validate = ValidateOptions.builder().context(whole).build();
-    var scheme = connect().scheme();
-    scheme.process("H", process);
-    String processBody = lastBody;
-    scheme.validate("H", validate);
-    String validateBody = lastBody;
-    custom.value = 99;
-    atomic.set(42);
-    // Equal cache keys return without changing the last observed request body.
-    scheme.process("H", process);
-    assertEquals(validateBody, lastBody);
-    scheme.validate("H", validate);
-    assertEquals(validateBody, lastBody);
-    var returned =
-        (com.google.gson.JsonObject) process.assertions().get(0).metadata().get("custom");
-    returned.addProperty("value", 55);
-    var returnedWhole =
-        (com.google.gson.JsonObject)
-            validate.context().partOf().assertions().get(0).metadata().get("json");
-    returnedWhole.addProperty("atomic", 56);
-    scheme.process("H", process);
-    assertEquals(validateBody, lastBody);
-    scheme.validate("H", validate);
-    assertEquals(validateBody, lastBody);
-    var uncached =
-        new EzClassifyContext(
-                baseUrl,
-                "acme-ctx",
-                "1.0.0",
-                null,
-                java.net.http.HttpClient.newHttpClient(),
-                new ContextCacheOptions(false, true))
-            .scheme();
-    uncached.process("H", process);
-    assertEquals(processBody, lastBody);
-    uncached.validate("H", validate);
-    assertEquals(validateBody, lastBody);
-  }
-
-  @Test
-  void mutableMapKeyCannotChangePublicRequestOrCacheIdentity() {
-    var key = new MutableWireNumber(7);
-    var nested = new java.util.LinkedHashMap<Object, Object>();
-    nested.put(key, "value");
-    var fact =
-        new Assertion(
-            "level",
-            "L_H",
-            AssertionConfidence.CERTAIN,
-            null,
-            java.util.Map.of("nested", nested),
-            null,
-            null,
-            "user",
-            null,
-            null);
-    var context =
-        new ProcessingContext(
-            ProcessingRole.PART, new ProcessingContext.PartOf("H", List.of(fact)));
-    var process = ProcessOptions.builder().assertions(List.of(fact)).build();
-    var validate = ValidateOptions.builder().context(context).build();
-    var scheme = connect().scheme();
-    scheme.process("H", process);
-    String processBody = lastBody;
-    assertTrue(processBody.contains("\"nested\":{\"7\":\"value\"}"));
-    scheme.validate("H", validate);
-    String validateBody = lastBody;
-    key.value = 99;
-    scheme.process("H", process);
-    assertEquals(validateBody, lastBody);
-    scheme.validate("H", validate);
-    assertEquals(validateBody, lastBody);
-    var returned = (java.util.Map<?, ?>) process.assertions().get(0).metadata().get("nested");
-    assertEquals(java.util.Set.of("7"), returned.keySet());
-    assertThrows(UnsupportedOperationException.class, () -> returned.keySet().clear());
-    var returnedWhole =
-        (java.util.Map<?, ?>)
-            validate.context().partOf().assertions().get(0).metadata().get("nested");
-    assertThrows(UnsupportedOperationException.class, () -> returnedWhole.clear());
-    var uncached =
-        new EzClassifyContext(
-                baseUrl,
-                "acme-ctx",
-                "1.0.0",
-                null,
-                java.net.http.HttpClient.newHttpClient(),
-                new ContextCacheOptions(false, true))
-            .scheme();
-    uncached.process("H", process);
-    assertEquals(processBody, lastBody);
-    uncached.validate("H", validate);
-    assertEquals(validateBody, lastBody);
-  }
-
-  /**
-   * Response-shape gate for the marking routes. Every canned answer for a scheme or crosswalk route
-   * is one the contract allows, checked with every object closed, so a stub cannot keep a member
-   * the contract removed, or miss one it requires, and leave a decoding test passing against a
-   * shape no server sends.
-   */
   @Test
   void factsSuggestionsSendOnlyAssertionsAndKeepExplicitFalse() {
-    var fact =
-        new Assertion(
-            "level",
-            "L_H",
-            AssertionConfidence.CERTAIN,
-            null,
-            null,
-            null,
-            null,
-            "user",
-            null,
-            null);
+    var fact = new Assertion("level", "L_H", AssertionConfidence.CERTAIN, null, "user", null, null);
     connect()
         .scheme()
         .suggest(
@@ -542,7 +351,7 @@ class ContextRemoteTest {
       assertEquals("/v1/ctx/acme-ctx/scheme/process", lastPath);
 
       EzClassifyContext withOptions =
-          client.context("acme-ctx", null, new ContextCacheOptions(false, true));
+          client.context("acme-ctx", null, new ContextCacheOptions(true));
       assertNull(withOptions.version());
       withOptions.scheme().process("H");
       assertEquals("/v1/ctx/acme-ctx/scheme/process", lastPath);
@@ -565,7 +374,7 @@ class ContextRemoteTest {
 
     EzClassifyContext withBoth =
         EzClassifyClient.connect(
-            baseUrl, "acme-ctx", null, credentials, new ContextCacheOptions(false, true));
+            baseUrl, "acme-ctx", null, credentials, new ContextCacheOptions(true));
     assertNull(withBoth.version());
     withBoth.scheme().process("H");
     assertEquals("/v1/ctx/acme-ctx/scheme/process", lastPath);
@@ -672,17 +481,7 @@ class ContextRemoteTest {
   @Test
   void schemeProcessSendsTypedTextAndChosenFactsTogether() {
     Assertion chosen =
-        new Assertion(
-            "level",
-            "L_H",
-            AssertionConfidence.CERTAIN,
-            null,
-            null,
-            null,
-            null,
-            "user",
-            null,
-            null);
+        new Assertion("level", "L_H", AssertionConfidence.CERTAIN, null, "user", null, null);
     connect()
         .scheme()
         .process(
@@ -724,17 +523,7 @@ class ContextRemoteTest {
     // partOf.assertions is populated by the engine but forwardable verbatim; each entry is the
     // full Assertion shape, not the narrower projection assertionArray() sends for `assertions`.
     Assertion carried =
-        new Assertion(
-            "level",
-            "HIGH",
-            AssertionConfidence.CERTAIN,
-            null,
-            null,
-            null,
-            null,
-            "parse",
-            null,
-            "H");
+        new Assertion("level", "HIGH", AssertionConfidence.CERTAIN, null, "parse", null, "H");
     ProcessingContext part =
         new ProcessingContext(
             ProcessingRole.PART, new ProcessingContext.PartOf("H//A", List.of(carried)));
@@ -773,7 +562,6 @@ class ContextRemoteTest {
     // words in the message. Only their presence means anything: an error without them says
     // nothing about whether the token was stray text.
     assertEquals(List.of("L_H"), errs.get(0).didYouMean());
-    assertNull(errs.get(0).suggestedFix());
     assertEquals("/v1/ctx/acme-ctx/1.0.0/scheme/validate", lastPath);
     assertEquals(
         JsonParser.parseString("{\"input\":\"H HGIH\"}"), JsonParser.parseString(lastBody));
@@ -782,17 +570,7 @@ class ContextRemoteTest {
   @Test
   void schemeValidateSendsFactsWithNoInputBesideThem() {
     Assertion stated =
-        new Assertion(
-            "level",
-            "L_H",
-            AssertionConfidence.CERTAIN,
-            null,
-            null,
-            null,
-            null,
-            "user",
-            null,
-            null);
+        new Assertion("level", "L_H", AssertionConfidence.CERTAIN, null, "user", null, null);
     ProcessingContext whole = new ProcessingContext(ProcessingRole.WHOLE, null);
     connect()
         .scheme()
@@ -906,7 +684,7 @@ class ContextRemoteTest {
     AggregateResult a = connect().scheme().aggregate(List.of("L", "H")).result();
     assertEquals("H", a.rendered());
     assertEquals(1, a.notices().size());
-    assertEquals(ConceptNoticeType.HANDLING, a.notices().get(0).type());
+    assertEquals(ConceptNoticeType.WARNING, a.notices().get(0).type());
     assertEquals("/v1/ctx/acme-ctx/1.0.0/scheme/aggregate", lastPath);
     assertTrue(lastBody.contains("\"inputs\""));
   }
@@ -914,29 +692,9 @@ class ContextRemoteTest {
   @Test
   void schemeAggregateAssertionsSendsAssertionSets() {
     Assertion high =
-        new Assertion(
-            "level",
-            "L_H",
-            AssertionConfidence.CERTAIN,
-            null,
-            null,
-            null,
-            null,
-            "parse",
-            null,
-            null);
+        new Assertion("level", "L_H", AssertionConfidence.CERTAIN, null, "parse", null, null);
     Assertion orig =
-        new Assertion(
-            "origin",
-            "ORIG",
-            AssertionConfidence.CERTAIN,
-            null,
-            null,
-            null,
-            null,
-            "parse",
-            null,
-            "ABCXYZ");
+        new Assertion("origin", "ORIG", AssertionConfidence.CERTAIN, null, "parse", null, "ABCXYZ");
     AggregateResult a =
         connect().scheme().aggregateAssertions(List.of(List.of(high), List.of(orig))).result();
     assertEquals("H", a.rendered());
@@ -970,17 +728,7 @@ class ContextRemoteTest {
   void schemeRenderReturnsBareString() {
     List<Assertion> a =
         List.of(
-            new Assertion(
-                "level",
-                "L_H",
-                AssertionConfidence.CERTAIN,
-                null,
-                null,
-                null,
-                null,
-                "parse",
-                null,
-                null));
+            new Assertion("level", "L_H", AssertionConfidence.CERTAIN, null, "parse", null, null));
     String rendered = connect().scheme().render(a).result().result();
     assertEquals("LEVEL-HIGH", rendered);
     assertEquals("/v1/ctx/acme-ctx/1.0.0/scheme/render", lastPath);
@@ -994,17 +742,7 @@ class ContextRemoteTest {
   void schemeRenderThreadsFormat() {
     List<Assertion> a =
         List.of(
-            new Assertion(
-                "level",
-                "L_H",
-                AssertionConfidence.CERTAIN,
-                null,
-                null,
-                null,
-                null,
-                "parse",
-                null,
-                null));
+            new Assertion("level", "L_H", AssertionConfidence.CERTAIN, null, "parse", null, null));
     var response =
         connect()
             .scheme()
@@ -1027,16 +765,7 @@ class ContextRemoteTest {
   void schemeRenderFullPreservationRefusalStaysTyped() {
     Assertion assertion =
         new Assertion(
-            "authority",
-            "REFUSE",
-            AssertionConfidence.CERTAIN,
-            null,
-            null,
-            null,
-            null,
-            "parse",
-            null,
-            "A&B");
+            "authority", "REFUSE", AssertionConfidence.CERTAIN, null, "parse", null, "A&B");
     EzClassifyClientException failure =
         assertThrows(
             EzClassifyClientException.class,
@@ -1052,13 +781,6 @@ class ContextRemoteTest {
     assertEquals(400, failure.statusCode());
     assertEquals("RENDER_NOT_PRESERVING", failure.code());
     assertEquals("omitted authority REFUSE=A&B", failure.detail());
-  }
-
-  @Test
-  void schemeNormalizeUnwrapsResult() {
-    String n = connect().scheme().normalize("high").result().result();
-    assertEquals("LEVEL-HIGH", n);
-    assertEquals("/v1/ctx/acme-ctx/1.0.0/scheme/normalize", lastPath);
   }
 
   @Test
@@ -1110,21 +832,11 @@ class ContextRemoteTest {
   }
 
   @Test
-  void schemeFilterConcepts() {
-    FilterResult f = connect().scheme().filterConcepts("hi").result();
-    assertEquals(2, f.visibleIds().size());
-    assertEquals(2, f.categoryCounts().get("level").visible());
-    assertEquals(5, f.categoryCounts().get("level").total());
-    assertEquals(9, f.total().total());
-    assertEquals("/v1/ctx/acme-ctx/1.0.0/scheme/filter-concepts", lastPath);
-  }
-
-  @Test
   void schemeNotices() {
     List<Notice> n = connect().scheme().notices(List.of()).result();
     assertEquals(1, n.size());
     assertTrue(n.get(0).required());
-    assertEquals(ConceptNoticeType.HANDLING, n.get(0).type());
+    assertEquals(ConceptNoticeType.WARNING, n.get(0).type());
     assertEquals("/v1/ctx/acme-ctx/1.0.0/scheme/notices", lastPath);
   }
 
@@ -1132,6 +844,7 @@ class ContextRemoteTest {
   void schemeView() {
     SchemeViewResponse v = connect().scheme().view().result();
     assertEquals("Scheme", v.name());
+    assertEquals("H", v.marking());
     assertEquals(1, v.categories().size());
     assertEquals("Level", v.categories().get(0).label());
     assertEquals(1, v.categories().get(0).items().size());
@@ -1140,7 +853,7 @@ class ContextRemoteTest {
 
   @Test
   void schemeConceptsPreserveCitationFromTheFlatResource() {
-    List<ConceptView> concepts = connect().scheme().concepts("source/a");
+    List<ConceptView> concepts = connect().schemes().get("source/a").concepts();
     assertEquals(2, concepts.size());
     ConceptView concept = concepts.get(0);
     assertEquals("L_H", concept.id());
@@ -1188,7 +901,6 @@ class ContextRemoteTest {
     assertEquals("r1", g.get(0).rule().id());
     assertEquals("/v1/ctx/acme-ctx/1.0.0/guide/scan", lastPath);
     assertFalse(lastBody.contains("schemeId"));
-    assertEquals("broker:guide-rule:srcref:x", g.get(0).provenance().providerId());
   }
 
   @Test
@@ -1202,12 +914,20 @@ class ContextRemoteTest {
 
   @Test
   void guideEvaluateMany() {
-    EvaluationResult e = connect().guide().evaluateMany("r1").result();
+    EvaluationResult e =
+        connect()
+            .guide()
+            .evaluateMany(new GuideRuleSelection("g1", "r1"), new GuideRuleSelection("g2", "r1"))
+            .result();
     assertEquals("H", e.aggregatedMarking());
     assertEquals("/v1/ctx/acme-ctx/1.0.0/guide/evaluate", lastPath);
-    assertTrue(lastBody.contains("\"allGuides\":true"));
-    assertTrue(lastBody.contains("\"selectedRuleIds\":[\"r1\"]"));
-    assertFalse(lastBody.contains("guideId"));
+    assertTrue(
+        lastBody.contains(
+            "\"selections\":[{\"guideId\":\"g1\",\"ruleId\":\"r1\"},"
+                + "{\"guideId\":\"g2\",\"ruleId\":\"r1\"}]"),
+        lastBody);
+    assertFalse(lastBody.contains("selectedRuleIds"));
+    assertFalse(lastBody.contains("allGuides"));
   }
 
   /** breakdown and contributingBreakdown carry the entries the server returned. */
@@ -1228,43 +948,10 @@ class ContextRemoteTest {
   }
 
   @Test
-  void guideFilterRules() {
-    FilterResult f = connect().guide().filterRules("sec").result();
-    assertEquals(1, f.visibleIds().size());
-    assertEquals("/v1/ctx/acme-ctx/1.0.0/guide/filter-rules", lastPath);
-  }
-
-  @Test
-  void guideDescribeRule() {
-    RuleDescription d = connect().guide().describeRule("r1").result();
-    assertEquals("marks H", d.outcomeText());
-    assertFalse(d.isComputed());
-    assertEquals("/v1/ctx/acme-ctx/1.0.0/guide/describe-rule", lastPath);
-    assertEquals(
-        com.google.gson.JsonParser.parseString(ROUTES.get("/guide/describe-rule")),
-        WireJson.toTree(d));
-  }
-
-  @Test
-  void guideDescriptionRequiresComputedBoolean() {
-    String original = ROUTES.get("/guide/describe-rule");
-    var fixture = com.google.gson.JsonParser.parseString(original).getAsJsonObject();
-    try {
-      fixture.remove("isComputed");
-      ROUTES.put("/guide/describe-rule", fixture.toString());
-      assertThrows(EzClassifyClientException.class, () -> connect().guide().describeRule("r1"));
-      fixture.add("isComputed", com.google.gson.JsonNull.INSTANCE);
-      ROUTES.put("/guide/describe-rule", fixture.toString());
-      assertThrows(EzClassifyClientException.class, () -> connect().guide().describeRule("r1"));
-    } finally {
-      ROUTES.put("/guide/describe-rule", original);
-    }
-  }
-
-  @Test
   void guideView() {
     GuideViewResponse v = connect().guide().view("g1").result();
     assertEquals("Guide", v.name());
+    assertEquals("H", v.marking());
     assertEquals(1, v.uncategorized().size());
     assertEquals("/v1/ctx/acme-ctx/1.0.0/guide/view", lastPath);
   }
@@ -1273,18 +960,8 @@ class ContextRemoteTest {
   void accessCheckOmitsSchemeIdUsesUserAttributes() {
     List<Assertion> a =
         List.of(
-            new Assertion(
-                "level",
-                "L_H",
-                AssertionConfidence.CERTAIN,
-                null,
-                null,
-                null,
-                null,
-                "parse",
-                null,
-                null));
-    AccessDecision d = connect().access().check(a, "{\"clearance\":\"HIGH\"}").result();
+            new Assertion("level", "L_H", AssertionConfidence.CERTAIN, null, "parse", null, null));
+    AccessDecision d = connect().access().check(a, Map.of("clearance", "HIGH")).result();
     assertTrue(d.granted());
     assertEquals(1, d.rules().size());
     assertEquals("/v1/ctx/acme-ctx/1.0.0/access/check", lastPath);
@@ -1292,8 +969,6 @@ class ContextRemoteTest {
     assertTrue(lastBody.contains("assertions"));
     assertFalse(lastBody.contains("dataAssertions"));
     assertFalse(lastBody.contains("schemeId"));
-    assertEquals("broker:access-rule:srcref:x", d.provenance().providerId());
-    assertEquals("snap-7", d.provenance().snapshotId());
     assertTrue(d.rules().get(0).activation().matched());
     assertEquals("clearance", d.rules().get(0).comparisons().get(0).left().path());
     assertEquals("sha256:r1", d.rules().get(0).rule().ruleDigest());
@@ -1318,57 +993,17 @@ class ContextRemoteTest {
         JsonParser.parseString("{\"project\":\"p1\"}"),
         JsonParser.parseString(lastBody).getAsJsonObject().get("context"));
 
-    connect().access().checkByMarking("RED//ORG", "{\"clearance\":\"AMBER\"}", null);
+    connect().access().checkByMarking("RED//ORG", Map.of("clearance", "AMBER"), null);
     assertFalse(JsonParser.parseString(lastBody).getAsJsonObject().has("context"));
-  }
-
-  @Test
-  void accessRejectsContextThatIsNotAJsonObjectDocument() {
-    EzClassifyContext ctx = connect();
-    for (String bad : new String[] {"", "   ", "[1,2]", "\"str\"", "7", "{oops"}) {
-      lastPath = null;
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> ctx.access().check(List.of(), "{}", bad),
-          "check: " + bad);
-      assertNull(lastPath, "check must reject " + bad + " before sending a request");
-
-      lastPath = null;
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> ctx.access().checkByMarking("RED//ORG", "{}", bad),
-          "checkByMarking: " + bad);
-      assertNull(lastPath, "checkByMarking must reject " + bad + " before sending a request");
-    }
   }
 
   @Test
   void accessCheckByMarking() {
     AccessDecision d =
-        connect().access().checkByMarking("RED//ORG", "{\"clearance\":\"AMBER\"}").result();
+        connect().access().checkByMarking("RED//ORG", Map.of("clearance", "AMBER")).result();
     assertTrue(d.granted());
     assertTrue(lastBody.contains("\"marking\":\"RED//ORG\""));
     assertFalse(lastBody.contains("schemeId"));
-  }
-
-  @Test
-  void accessRejectsUserAttributesThatAreNotAJsonObjectDocument() {
-    EzClassifyContext ctx = connect();
-    for (String bad : new String[] {null, "", "   ", "[1,2]", "\"str\"", "7", "{oops"}) {
-      lastPath = null;
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> ctx.access().check(List.of(), bad),
-          "check: " + bad);
-      assertNull(lastPath, "check must reject " + bad + " before sending a request");
-
-      lastPath = null;
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> ctx.access().checkByMarking("RED//ORG", bad),
-          "checkByMarking: " + bad);
-      assertNull(lastPath, "checkByMarking must reject " + bad + " before sending a request");
-    }
   }
 
   @Test
@@ -1379,11 +1014,15 @@ class ContextRemoteTest {
   }
 
   @Test
-  void accessDescribeRule() {
-    AccessRuleDescription r = connect().access().describeRule("r1").result();
-    assertEquals("ORG", r.name());
-    assertEquals(1, r.attributesNeeded().size());
-    assertEquals("/v1/ctx/acme-ctx/1.0.0/access/describe-rule", lastPath);
+  void describeCrosswalksReadsTheFlatInventory() {
+    List<ContextCrosswalkDescriptor> crosswalks = connect().describeCrosswalks();
+    assertEquals("/v1/ctx/acme-ctx/1.0.0/crosswalk/describe", lastPath);
+    assertEquals(1, crosswalks.size());
+    ContextCrosswalkDescriptor crosswalk = crosswalks.get(0);
+    assertEquals("a-to-b", crosswalk.id());
+    assertEquals("a", crosswalk.source());
+    assertEquals("b", crosswalk.target());
+    assertEquals("open", crosswalk.mappings().get(0).id());
   }
 
   @Test
@@ -1465,29 +1104,6 @@ class ContextRemoteTest {
   }
 
   @Test
-  void documentAssessAccessPreservesThreeScenarioSemanticsAndProjection() {
-    ContextDocumentAccessAssessmentResult envelope =
-        connect()
-            .document()
-            .assessAccess(
-                "a doc",
-                Map.of("clearance", "HIGH"),
-                Map.of("location", "office"),
-                null,
-                DocumentResponseProfile.SUMMARY);
-
-    assertEquals("granted", envelope.result().authored().status().toWire());
-    assertEquals("denied", envelope.result().authoritative().status().toWire());
-    assertEquals("not-evaluated", envelope.result().projected().status().toWire());
-    assertTrue(envelope.result().projected().advisory());
-    assertNull(envelope.result().projected().decision());
-    assertEquals("acme-ctx", envelope.resolution().contextId());
-    assertEquals("summary", lastBody.contains("\"responseProfile\":\"summary\"") ? "summary" : "");
-    assertTrue(lastBody.contains("\"userAttributes\""));
-    assertTrue(lastBody.contains("\"context\""));
-  }
-
-  @Test
   void ctxOpPropagatesServerError() {
     EzClassifyContext ctx = EzClassifyClient.connect(baseUrl, "acme-ctx", "1.0.0");
     EzClassifyClientException ex =
@@ -1548,11 +1164,13 @@ class ContextRemoteTest {
 
   /**
    * What the stub answers for {@code route}: the canned result in its Context envelope, except for
-   * the two routes whose answer is not enveloped.
+   * the three routes whose answer is not enveloped.
    */
   private static String served(String route) {
     String result = ROUTES.get(route);
-    if (route.equals("/access/rules") || route.equals("/scheme/concepts")) return result;
+    if (route.equals("/access/rules")
+        || route.equals("/crosswalk/describe")
+        || route.equals("/scheme/concepts")) return result;
     return contextEnvelope(result, route.startsWith("/document/"));
   }
 
@@ -1561,29 +1179,14 @@ class ContextRemoteTest {
         documentOperation
             ? ",\"responseProjection\":{\"profile\":\"standard\",\"detailsComplete\":false,\"omittedFields\":[\"result.guideAssessment.nominations\"],\"counts\":{\"nominations\":2,\"evidenceSpans\":3,\"guideUnits\":1,\"accessRuleResults\":3,\"contentRequirements\":0,\"contextRequirements\":0}}"
             : "";
-    return "{\"resolution\":{\"contextId\":\"acme-ctx\",\"requestedVersion\":\"1.0.0\",\"resolvedVersion\":\"9.9.9\",\"artifacts\":[],\"sources\":[]},\"result\":"
+    return "{\"resolution\":{\"contextId\":\"acme-ctx\",\"requestedVersion\":\"1.0.0\",\"resolvedVersion\":\"9.9.9\",\"artifacts\":[]},\"result\":"
         + result
-        + ",\"operationLimitations\":[]"
+        + ""
         + projection
         + "}";
   }
 
   private static String documentAuditJson() {
     return "{\"markingRequirements\":{\"whole\":true,\"part\":true},\"whole\":\"RED//ORG\",\"wholes\":[{\"marking\":\"RED//ORG\",\"start\":0,\"end\":8,\"offsetEncoding\":\"utf8-bytes\"}],\"wholeValidation\":{\"assertions\":[{\"categoryId\":\"level\",\"conceptId\":\"RED\",\"confidence\":\"certain\",\"source\":\"parse\"},{\"categoryId\":\"org\",\"conceptId\":\"ORG\",\"confidence\":\"certain\",\"source\":\"parse\"}],\"recognition\":{\"status\":\"complete\",\"inputFormat\":\"marking/banner\",\"role\":\"whole\",\"surface\":\"marking\",\"unmatched\":[]},\"valid\":true,\"inputWasValid\":true,\"errors\":[],\"proposedFixes\":[],\"appliedFixes\":[],\"rendered\":\"RED//ORG\"},\"parts\":[{\"marking\":\"AMBER\",\"text\":\"para\",\"start\":10,\"end\":14,\"offsetEncoding\":\"utf8-bytes\",\"scopeId\":\"part-1\",\"validation\":{\"assertions\":[{\"categoryId\":\"level\",\"conceptId\":\"AMBER\",\"confidence\":\"certain\",\"source\":\"parse\"}],\"recognition\":{\"status\":\"complete\",\"inputFormat\":\"marking/portion\",\"role\":\"part\",\"surface\":\"marking\",\"unmatched\":[]},\"valid\":true,\"inputWasValid\":false,\"errors\":[],\"proposedFixes\":[],\"appliedFixes\":[{\"ruleId\":\"_recognition_case\",\"action\":\"reorder\",\"message\":\"Read `amber` as `AMBER` (case).\"}],\"rendered\":\"AMBER\"}}],\"wholeCoversParts\":{\"covered\":true,\"missing\":[],\"missingLabels\":[],\"excess\":[],\"excessLabels\":[],\"rendered\":\"RED//ORG\"},\"unmarkedSpans\":[{\"start\":20,\"end\":25,\"offsetEncoding\":\"utf8-bytes\",\"text\":\"extra\"}],\"proceduralFlags\":[\"unmarked-content\"],\"overallVerdict\":\"mixed\",\"vocabulary\":{\"whole\":{\"singular\":\"banner\",\"plural\":\"banners\"},\"part\":{\"singular\":\"portion\",\"plural\":\"portions\"}},\"documentDigest\":\"sha256:document\",\"guideAssessment\":null,\"limitations\":[]}";
-  }
-
-  private static String scenarioJson(String basis, boolean advisory, String status) {
-    String decision = "not-evaluated".equals(status) ? "null" : ROUTES.get("/access/check");
-    return "{\"basis\":\""
-        + basis
-        + "\",\"advisory\":"
-        + advisory
-        + ",\"status\":\""
-        + status
-        + "\",\"target\":{\"basis\":\""
-        + basis
-        + "\",\"marking\":\"RED//ORG\",\"assertions\":[],\"authoredWhole\":\"RED//ORG\",\"authoredParts\":[],\"determinedGuideRequiredWhole\":null,\"projectedGuideRequiredWhole\":null},\"decision\":"
-        + decision
-        + ",\"contentRequirements\":[],\"contextRequirements\":[],\"limitations\":[]}";
   }
 }

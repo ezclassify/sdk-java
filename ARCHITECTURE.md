@@ -3,7 +3,7 @@
 This repository contains the EzClassify Java SDK. It adapts the public REST
 contract to Java; EzClassify Runtime evaluates marking operations and composes
 Contexts. The Maven reactor publishes
-the REST contract and an HTTP client. Dependencies flow toward the REST
+one artifact holding the REST contract and an HTTP client. Dependencies flow toward the REST
 contract; transport code does not own engine policy.
 
 ## Sources of truth
@@ -20,10 +20,10 @@ contract; transport code does not own engine policy.
 
 ## Generated code
 
-[`types/scripts/gen.mjs`](types/scripts/gen.mjs) consumes the vendored OpenAPI document and JSON Schemas.
+[`client/scripts/gen.mjs`](client/scripts/gen.mjs) consumes the vendored OpenAPI document and JSON Schemas.
 Maven runs it during `generate-sources`. Its wire types go to
-`types/target/generated-sources/java/com/ezclassify/rest/contract/`. Its one other
-output, run from the client module, is the package-private `ResponseShapes`
+`client/target/generated-sources/java/com/ezclassify/rest/contract/`. Its one other
+output is the package-private `ResponseShapes`
 table in `client/target/generated-sources/java/com/ezclassify/rest/client/`: the
 members every success response must carry, read from the OpenAPI `required`
 lists. It is not a wire type and is not public. Generated sources are build
@@ -88,12 +88,10 @@ response gave it. `fromWire` stays strict for a token a caller types in.
 
 ## Handwritten seams
 
-Handwritten files in [`types/src/main/java/com/ezclassify/rest/contract/`](types/src/main/java/com/ezclassify/rest/contract/) are a closed,
+Handwritten files in [`client/src/main/java/com/ezclassify/rest/contract/`](client/src/main/java/com/ezclassify/rest/contract/) are a closed,
 reviewed set:
 
 - Encoding boundary: `Utf8Offsets`.
-- Java-native projection: `FilterResult`, whose counts are integers where the
-  contract types them as JSON numbers.
 - Contract enum base: `ExpandableStringEnum`, which every generated contract
   enum extends.
 - Public operation support: `ContextOperationResult`, the generic envelope
@@ -104,8 +102,10 @@ guard. Adding a handwritten type is an architectural change: update the
 generator when the type is a wire contract, or review and document a genuine
 Java-specific seam before changing the allowlist.
 
-The [`client/`](client/) Maven module owns only its language boundary: HTTP, strict wire
-decoding, version checks, and thin Context operation groups.
+The client package owns only its language boundary: HTTP, strict wire
+decoding, version checks, and thin Context operation groups. It lives in the same
+Maven module as the contract package and depends on it; the contract package never
+depends on the client.
 
 ## Forbidden ownership
 

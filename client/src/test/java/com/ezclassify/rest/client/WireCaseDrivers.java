@@ -2,6 +2,7 @@ package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.Assertion;
 import com.ezclassify.rest.contract.DocumentResponseProfile;
+import com.ezclassify.rest.contract.GuideRuleSelection;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.lang.reflect.InvocationTargetException;
@@ -25,9 +26,9 @@ final class WireCaseDrivers {
           Map.entry("ctx-describe.ok", Boundary.PUBLIC),
           Map.entry("ctx-document-audit.ok", Boundary.PUBLIC),
           Map.entry("ctx-document-audit.empty-text", Boundary.PRIVATE),
-          Map.entry("ctx-document-assess-access.ok", Boundary.PUBLIC),
           Map.entry("ctx-describe.presets", Boundary.PUBLIC),
           Map.entry("ctx-describe.crosswalks", Boundary.PUBLIC),
+          Map.entry("ctx-describe.marked", Boundary.PUBLIC),
           Map.entry("ctx-scheme-summary.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-concepts.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-categories.ok", Boundary.PUBLIC),
@@ -35,7 +36,6 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-concepts.layered", Boundary.PUBLIC),
           Map.entry("ctx-scheme-categories.layered", Boundary.PUBLIC),
           Map.entry("ctx-scheme-formats.ok", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-grammar.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-scopes.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-scopes.none", Boundary.PUBLIC),
           Map.entry("ctx-scheme-label-presets.ok", Boundary.PUBLIC),
@@ -45,29 +45,30 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-concepts.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-categories.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-formats.full", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-grammar.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-scopes.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-label-presets.full", Boundary.PUBLIC),
           Map.entry("ctx-scheme-process.ok", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-process.selected-scheme", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-process.unknown-scheme", Boundary.PUBLIC),
           Map.entry("ctx-scheme-process.empty", Boundary.PUBLIC),
           Map.entry("ctx-scheme-process.outputs-and-options", Boundary.PUBLIC),
           Map.entry("ctx-scheme-validate.ok", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-validate.selected-scheme", Boundary.PUBLIC),
           Map.entry("ctx-scheme-validate.assertions", Boundary.PUBLIC),
           Map.entry("ctx-scheme-validate.both-sources", Boundary.PRIVATE),
           Map.entry("ctx-scheme-validate.no-source", Boundary.PRIVATE),
           Map.entry("ctx-scheme-process.undeclared-format", Boundary.PUBLIC),
           Map.entry("ctx-scheme-aggregate.input-format-with-sets", Boundary.PRIVATE),
           Map.entry("ctx-scheme-explain.ok", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-normalize.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-render.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-render.empty", Boundary.PUBLIC),
           Map.entry("ctx-scheme-diff.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-view.ok", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-view.marked", Boundary.PUBLIC),
           Map.entry("ctx-scheme-notices.ok", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-filter-concepts.ok", Boundary.PUBLIC),
-          Map.entry("ctx-scheme-filter-concepts.no-match", Boundary.PUBLIC),
           Map.entry("ctx-scheme-scan.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-aggregate.ok", Boundary.PUBLIC),
+          Map.entry("ctx-scheme-aggregate.selected-scheme", Boundary.PUBLIC),
           Map.entry("ctx-scheme-aggregate.assertion-sets", Boundary.PUBLIC),
           Map.entry("ctx-scheme-suggest.ok", Boundary.PUBLIC),
           Map.entry("ctx-scheme-suggest.gated-hidden", Boundary.PUBLIC),
@@ -87,39 +88,28 @@ final class WireCaseDrivers {
           Map.entry("ctx-access-check.marking", Boundary.PUBLIC),
           Map.entry("ctx-access-check.assertions", Boundary.PUBLIC),
           Map.entry("ctx-access-check.two-attributes", Boundary.PUBLIC),
-          Map.entry("ctx-access-describe-rule.ok", Boundary.PUBLIC),
           Map.entry("ctx-access-describe-requirements.ok", Boundary.PUBLIC),
           Map.entry("ctx-access-rules.ok", Boundary.PUBLIC),
+          Map.entry("ctx-access-rules.marked", Boundary.PUBLIC),
           Map.entry("ctx-access-rules.no-policy", Boundary.PUBLIC),
           Map.entry("ctx-guide-scan.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-evaluate.ok", Boundary.PUBLIC),
-          Map.entry("ctx-guide-evaluate.all-guides", Boundary.PUBLIC),
-          Map.entry("ctx-guide-describe-rule.ok", Boundary.PUBLIC),
-          Map.entry("ctx-guide-describe-rule.unknown-guide", Boundary.PUBLIC),
+          Map.entry("ctx-guide-evaluate.selections", Boundary.PUBLIC),
           Map.entry("ctx-guide-view.by-id", Boundary.PUBLIC),
-          Map.entry("ctx-guide-filter-rules.ok", Boundary.PUBLIC),
           Map.entry("ctx-guide-view.ok", Boundary.PUBLIC),
+          Map.entry("ctx-guide-view.marked", Boundary.PUBLIC),
+          Map.entry("ctx-crosswalk-describe.ok", Boundary.PUBLIC),
+          Map.entry("ctx-crosswalk-describe.marked", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-translate.marking", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-translate.assertions", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-translate.translated", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-translate.forbidden", Boundary.PUBLIC),
+          Map.entry("ctx-crosswalk-translate.not-selected", Boundary.PUBLIC),
           Map.entry("ctx-crosswalk-translate.both-sources", Boundary.PRIVATE),
           Map.entry("ctx-crosswalk-translate.no-source", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-process.undeclared-request-field-fix", Boundary.PRIVATE),
-          Map.entry(
-              "ctx-scheme-process.undeclared-request-field-preserveDeprecated", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-process.undeclared-request-field-normalization", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-process.undeclared-request-field-skipRepair", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-process.undeclared-request-field-skipInference", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-process.undeclared-request-field-tolerant", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-process.undeclared-request-field-validateOnly", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-process.undeclared-request-field-scope", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-process.undeclared-request-field-format", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-process.undeclared-request-field-repairStrategy", Boundary.PRIVATE),
           Map.entry("ctx-scheme-process.undeclared-request-field-unknownField", Boundary.PRIVATE),
           Map.entry("ctx-scheme-validate.undeclared-field", Boundary.PRIVATE),
           Map.entry("ctx-scheme-explain.undeclared-field", Boundary.PRIVATE),
-          Map.entry("ctx-scheme-normalize.undeclared-field", Boundary.PRIVATE),
           Map.entry("ctx-scheme-aggregate.undeclared-field", Boundary.PRIVATE),
           Map.entry("ctx-scheme-suggest.undeclared-field", Boundary.PRIVATE),
           Map.entry("ctx-scheme-suggest-for-categories.undeclared-field", Boundary.PRIVATE),
@@ -174,21 +164,9 @@ final class WireCaseDrivers {
           Map.entry("ctx-scheme-suggest.input-format-with-facts", CLOSED_REQUEST),
           Map.entry("ctx-crosswalk-translate.both-sources", CLOSED_REQUEST),
           Map.entry("ctx-crosswalk-translate.no-source", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-process.undeclared-request-field-fix", CLOSED_REQUEST),
-          Map.entry(
-              "ctx-scheme-process.undeclared-request-field-preserveDeprecated", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-process.undeclared-request-field-normalization", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-process.undeclared-request-field-skipRepair", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-process.undeclared-request-field-skipInference", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-process.undeclared-request-field-tolerant", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-process.undeclared-request-field-validateOnly", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-process.undeclared-request-field-scope", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-process.undeclared-request-field-format", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-process.undeclared-request-field-repairStrategy", CLOSED_REQUEST),
           Map.entry("ctx-scheme-process.undeclared-request-field-unknownField", CLOSED_REQUEST),
           Map.entry("ctx-scheme-validate.undeclared-field", CLOSED_REQUEST),
           Map.entry("ctx-scheme-explain.undeclared-field", CLOSED_REQUEST),
-          Map.entry("ctx-scheme-normalize.undeclared-field", CLOSED_REQUEST),
           Map.entry("ctx-scheme-aggregate.undeclared-field", CLOSED_REQUEST),
           Map.entry("ctx-scheme-suggest.undeclared-field", CLOSED_REQUEST),
           Map.entry("ctx-scheme-suggest-for-categories.undeclared-field", CLOSED_REQUEST),
@@ -223,47 +201,49 @@ final class WireCaseDrivers {
           ? ctx.getJson(op)
           : ctx.postJson(op, c.body().getAsJsonObject());
     }
+    // A recorded ?scheme= names the scheme view the public call goes through; the view, not the
+    // driver, puts the selector back on the wire.
+    int queryStart = op.indexOf('?');
+    String route = queryStart < 0 ? op : op.substring(0, queryStart);
+    Map<String, String> query = queryStart < 0 ? Map.of() : query(op.substring(queryStart + 1));
+    ContextScheme s =
+        query.containsKey("scheme") ? ctx.schemes().get(query.get("scheme")) : ctx.scheme();
     if ("GET".equals(c.method())) {
-      if (op.isEmpty()) return ctx.describeContext();
-      switch (op) {
+      if (route.isEmpty()) return ctx.describeContext();
+      switch (route) {
         case "scheme" -> {
-          return ctx.scheme().summary();
+          return s.summary();
         }
         case "scheme/concepts" -> {
-          return ctx.scheme().concepts();
+          return s.concepts();
         }
         case "scheme/categories" -> {
-          return ctx.scheme().categories();
+          return s.categories();
         }
         case "scheme/formats" -> {
-          return ctx.scheme().formats();
-        }
-        case "scheme/grammar" -> {
-          return ctx.scheme().grammar();
+          return s.formats();
         }
         case "scheme/scopes" -> {
-          return ctx.scheme().scopes();
+          return s.scopes();
         }
         case "scheme/label-presets" -> {
-          return ctx.scheme().labelPresets();
+          return s.labelPresets();
+        }
+        case "scheme/describe-concept" -> {
+          return s.describeConcept(query.get("conceptId"), query.get("categoryId"));
         }
         default -> {}
       }
-      if (op.equals("access/rules")) return ctx.access().rules();
-      if (op.startsWith("scheme/describe-concept?")) {
-        // These two recorded values are literal non-encoded ASCII ids; request matching stays raw.
-        Map<String, String> query = new java.util.HashMap<>();
-        for (String pair : op.substring(op.indexOf('?') + 1).split("&")) {
-          String[] kv = pair.split("=", 2);
-          query.put(kv[0], kv[1]);
-        }
-        return ctx.scheme().describeConcept(query.get("conceptId"), query.get("categoryId"));
-      }
+      // The marked policy's case reads the policy's own marking off the same body.
+      if (route.equals("access/rules"))
+        return c.id().equals("ctx-access-rules.marked")
+            ? ctx.access().marking()
+            : ctx.access().rules();
+      if (route.equals("crosswalk/describe")) return ctx.describeCrosswalks();
       throw new AssertionError("unowned public GET " + c.id());
     }
     JsonObject body = c.body().getAsJsonObject();
-    ContextScheme s = ctx.scheme();
-    return switch (op) {
+    return switch (route) {
       case "scheme/process" ->
           s.process(
               text(body, "input"),
@@ -290,7 +270,6 @@ final class WireCaseDrivers {
           s.suggestForCategories(facts(body), strings(body, "categoryIds"));
       case "scheme/apply-preset" -> s.applyPreset(text(body, "presetId"));
       case "scheme/explain" -> s.explain(text(body, "input"));
-      case "scheme/normalize" -> s.normalize(text(body, "input"));
       case "scheme/render" ->
           s.render(
               facts(body),
@@ -298,7 +277,6 @@ final class WireCaseDrivers {
       case "scheme/diff" -> s.diff(text(body, "a"), text(body, "b"));
       case "scheme/view" -> s.view();
       case "scheme/notices" -> s.notices(facts(body));
-      case "scheme/filter-concepts" -> s.filterConcepts(text(body, "query"));
       case "scheme/scan" -> s.scan(text(body, "text"));
       case "scheme/aggregate" ->
           body.has("assertionSets")
@@ -308,26 +286,19 @@ final class WireCaseDrivers {
           s.checkCoverage(strings(body, "children"), text(body, "parent"));
       case "access/check" ->
           body.has("assertions")
-              ? ctx.access()
-                  .check(facts(body), body.get("userAttributes").toString(), context(body))
-              : ctx.access()
-                  .checkByMarking(
-                      text(body, "marking"), body.get("userAttributes").toString(), context(body));
-      case "access/describe-rule" -> ctx.access().describeRule(text(body, "ruleId"));
+              ? ctx.access().check(facts(body), attributes(body), context(body))
+              : ctx.access().checkByMarking(text(body, "marking"), attributes(body), context(body));
       case "access/describe-requirements" ->
           ctx.access().describeRequirements(text(body, "marking"));
       case "guide/scan" -> ctx.guide().scan(text(body, "text"));
       case "guide/evaluate" ->
-          body.has("allGuides")
-              ? ctx.guide().evaluateMany(strings(body, "selectedRuleIds").toArray(String[]::new))
+          body.has("selections")
+              ? ctx.guide().evaluateMany(selections(body))
               : ctx.guide()
                   .evaluate(
                       text(body, "guideId"),
                       strings(body, "selectedRuleIds").toArray(String[]::new));
-      case "guide/describe-rule" ->
-          ctx.guide().describeRule(text(body, "ruleId"), optional(body, "guideId"));
       case "guide/view" -> ctx.guide().view(optional(body, "guideId"));
-      case "guide/filter-rules" -> ctx.guide().filterRules(text(body, "query"));
       case "crosswalk/translate" ->
           body.has("assertions")
               ? ctx.crosswalk().translate(text(body, "crosswalkId"), facts(body))
@@ -338,23 +309,15 @@ final class WireCaseDrivers {
                   text(body, "text"),
                   null,
                   DocumentResponseProfile.fromWire(text(body, "responseProfile")));
-      case "document/assess-access" ->
-          ctx.document()
-              .assessAccess(
-                  text(body, "text"),
-                  attributes(body),
-                  body.has("context") ? Json.toMap(body.getAsJsonObject("context")) : null,
-                  null,
-                  DocumentResponseProfile.fromWire(text(body, "responseProfile")));
       default -> throw new AssertionError("unowned public POST " + c.id());
     };
   }
 
   /**
    * Call the public method that sends the case's recorded request, departing from it the way a
-   * cache-conformance plan asks. {@code reorderedMembers} supplies the same attributes in the
-   * reverse order, and {@code unsetMember} names a member the recorded request leaves out, which
-   * every driver here already passes as unset.
+   * cache-conformance plan asks. {@code reorderedMembers} sets the same process options on the
+   * builder in the reverse of the recorded member order, and {@code unsetMember} names a member the
+   * recorded request leaves out, which every driver here already passes as unset.
    */
   static Object invoke(WireCorpus.Case c, EzClassifyContext ctx, String variant, String member) {
     if (variant == null) return invoke(c, ctx);
@@ -365,17 +328,21 @@ final class WireCaseDrivers {
         return invoke(c, ctx);
       }
       case "reorderedMembers" -> {
-        if (!c.target().endsWith("/access/check") || !body.has("marking"))
+        if (!c.target().endsWith("/scheme/process"))
           throw new AssertionError("no reordered-member driver for " + c.id());
-        Map<String, Object> reversed = new java.util.LinkedHashMap<>();
-        List<Map.Entry<String, Object>> entries = new ArrayList<>(attributes(body).entrySet());
-        java.util.Collections.reverse(entries);
-        for (var entry : entries) reversed.put(entry.getKey(), entry.getValue());
-        return ctx.access()
-            .checkByMarking(
-                text(body, "marking"),
-                reversed,
-                body.has("context") ? Json.toMap(body.getAsJsonObject("context")) : null);
+        List<String> names = new ArrayList<>(body.keySet());
+        java.util.Collections.reverse(names);
+        ProcessOptions.Builder options = ProcessOptions.builder();
+        for (String name : names) {
+          switch (name) {
+            case "input" -> {}
+            case "outputFormat" -> options.outputFormat(text(body, name));
+            case "outputs" -> options.outputs(strings(body, name));
+            case "suggestFor" -> options.suggestFor(strings(body, name));
+            default -> throw new AssertionError("no reordered-member driver for " + name);
+          }
+        }
+        return ctx.scheme().process(text(body, "input"), options.build());
       }
       default -> throw new AssertionError("unsupported variant " + variant);
     }
@@ -398,6 +365,17 @@ final class WireCaseDrivers {
     };
   }
 
+  /** Recorded query values are literal non-encoded ASCII ids; request matching stays raw. */
+  private static Map<String, String> query(String raw) {
+    Map<String, String> query = new java.util.HashMap<>();
+    for (String pair : raw.split("&")) {
+      String[] kv = pair.split("=", 2);
+      if (kv.length != 2 || query.put(kv[0], kv[1]) != null)
+        throw new AssertionError("unreadable recorded query " + raw);
+    }
+    return Map.copyOf(query);
+  }
+
   private static String text(JsonObject body, String name) {
     return body.get(name).getAsString();
   }
@@ -406,8 +384,17 @@ final class WireCaseDrivers {
     return body.has(name) ? text(body, name) : null;
   }
 
-  private static String context(JsonObject body) {
-    return body.has("context") ? body.get("context").toString() : null;
+  private static Map<String, Object> context(JsonObject body) {
+    return body.has("context") ? Json.toMap(body.getAsJsonObject("context")) : null;
+  }
+
+  private static GuideRuleSelection[] selections(JsonObject body) {
+    List<GuideRuleSelection> selections = new ArrayList<>();
+    for (JsonElement entry : body.getAsJsonArray("selections")) {
+      JsonObject selection = entry.getAsJsonObject();
+      selections.add(new GuideRuleSelection(text(selection, "guideId"), text(selection, "ruleId")));
+    }
+    return selections.toArray(GuideRuleSelection[]::new);
   }
 
   private static List<String> strings(JsonObject body, String name) {

@@ -9,6 +9,10 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      # Matches the seven-day window `scripts/check-dependency-age.mjs` enforces,
+      # so Dependabot does not open a bump the gate would refuse.
+      default-days: 7
     groups:
       maven-production:
         dependency-type: production
@@ -29,6 +33,10 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      # Matches the seven-day window `scripts/check-dependency-age.mjs` enforces,
+      # so Dependabot does not open a bump the gate would refuse.
+      default-days: 7
     groups:
       npm-tools:
         patterns: ["*"]
@@ -47,6 +55,10 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      # Matches the seven-day window `scripts/check-dependency-age.mjs` enforces,
+      # so Dependabot does not open a bump the gate would refuse.
+      default-days: 7
     groups:
       github-actions:
         patterns: ["*"]

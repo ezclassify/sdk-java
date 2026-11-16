@@ -159,8 +159,7 @@ class WireEnumContractTest {
   void equalityIsByTypeAndToken() {
     assertEquals(
         AssertionConfidence.fromString("probable"), AssertionConfidence.fromString("probable"));
-    assertNotEquals(
-        AssertionConfidence.fromString("probable"), RepairConfidence.fromString("probable"));
+    assertNotEquals(AssertionConfidence.fromString("probable"), WarningKind.fromString("probable"));
     assertNotEquals(AssertionConfidence.fromString("probable"), AssertionConfidence.INFERRED);
     // A caller may type the declared token in any way; it still resolves to the canonical constant.
     assertSame(
@@ -172,7 +171,7 @@ class WireEnumContractTest {
     AssertionConfidence confidence = AssertionConfidence.fromString("probable");
     String handled =
         switch (confidence.value()) {
-          case CERTAIN, INFERRED, REPAIRED, UNCERTAIN -> "declared";
+          case CERTAIN, INFERRED, REPAIRED -> "declared";
           case UNKNOWN -> "unknown " + confidence.toWire();
         };
     assertEquals("unknown probable", handled);

@@ -169,7 +169,7 @@ class RequiredMemberRefusalTest {
               pieces[4],
               WireCaseDrivers.credentials(c),
               HTTP,
-              new ContextCacheOptions(false, true));
+              new ContextCacheOptions(true));
       return WireCaseDrivers.invoke(c, context);
     }
     try (EzClassifyClient client =

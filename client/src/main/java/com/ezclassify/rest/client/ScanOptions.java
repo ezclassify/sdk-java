@@ -1,14 +1,57 @@
 package com.ezclassify.rest.client;
 
+import java.util.Objects;
+
 /**
  * Immutable choices for one scan operation.
  *
  * <p>Null omits an option.
- *
- * @param inputFormat The declared input view or form; null lets the server recognize it.
- * @param outputFormat The declared output address; null uses the server default.
  */
-public record ScanOptions(String inputFormat, String outputFormat) {
+public final class ScanOptions {
+  private final String inputFormat;
+  private final String outputFormat;
+
+  private ScanOptions(String inputFormat, String outputFormat) {
+    this.inputFormat = inputFormat;
+    this.outputFormat = outputFormat;
+  }
+
+  /**
+   * The declared input view or form; null lets the server recognize it.
+   *
+   * @return the option, or null when omitted
+   */
+  public String inputFormat() {
+    return inputFormat;
+  }
+
+  /**
+   * The declared output address; null uses the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String outputFormat() {
+    return outputFormat;
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) return true;
+    if (!(other instanceof ScanOptions that)) return false;
+    return Objects.equals(inputFormat, that.inputFormat)
+        && Objects.equals(outputFormat, that.outputFormat);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(inputFormat, outputFormat);
+  }
+
+  @Override
+  public String toString() {
+    return "ScanOptions[inputFormat=" + inputFormat + ", outputFormat=" + outputFormat + "]";
+  }
+
   /**
    * Omit every optional choice.
    *

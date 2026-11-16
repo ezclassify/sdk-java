@@ -12,11 +12,11 @@ direction, and the required boundary gates.
 
 [`pom.xml`](pom.xml) is the parent reactor. Modules:
 
-- [`types/`](types/): REST contract records generated from OpenAPI and JSON Schemas
-  under [`vendor/spec/`](vendor/spec/), plus the small Java-native contract projections.
-- [`client/`](client/): Context-only HTTP client for the EzClassify REST API. The
-  server-resolved Context selects the composed scheme and related policy
-  artifacts.
+- [`client/`](client/): the published artifact. A Context-only HTTP client for the EzClassify
+  REST API in `com.ezclassify.rest.client`, and the REST contract records generated from OpenAPI
+  and JSON Schemas under [`vendor/spec/`](vendor/spec/) in `com.ezclassify.rest.contract`, plus
+  the small Java-native contract projections. The server-resolved Context selects the composed
+  scheme and related policy artifacts.
 - [`examples/sdk-tour/`](examples/sdk-tour/): runnable example exercising the HTTP client
   (`ClientDemo`). Lives inside the reactor so client changes that break the
   demo fail naturally in `make test`.
@@ -27,7 +27,7 @@ direction, and the required boundary gates.
 Build verbs (top-level Makefile):
 
 - `make regen` installs the pinned YAML parser into `tools/node_modules/`
-  and regenerates `types/target/generated-sources` from [`vendor/spec/`](vendor/spec/).
+  and regenerates `client/target/generated-sources` from [`vendor/spec/`](vendor/spec/).
   It does not fetch the spec; [`vendor/spec/`](vendor/spec/) is written only by the
   spec bot.
 - `make build` runs `mvn package -DskipTests` across every module

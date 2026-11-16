@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 /**
@@ -149,7 +150,9 @@ class ReplayerContractTest {
 
   /**
    * Recursively verify that every key in {@code expected} is present and equal in {@code actual}.
-   * Arrays match element-by-element up to expected's length.
+   * Arrays match element-by-element up to expected's length. An expected object read against an
+   * actual array addresses it as the Node reference matcher does: a canonical decimal key names an
+   * element and {@code length} is the element count, so a plan can pin an array's exact length.
    */
   static boolean subsetMatch(Object actual, Object expected) {
     if (expected == null) return actual == null;
@@ -169,6 +172,14 @@ class ReplayerContractTest {
       }
       return true;
     }
+    if (expected instanceof Map && actual instanceof List) {
+      Map<String, Object> exp = (Map<String, Object>) expected;
+      List<Object> act = (List<Object>) actual;
+      for (Map.Entry<String, Object> entry : exp.entrySet()) {
+        if (!subsetMatch(arrayMember(act, entry.getKey()), entry.getValue())) return false;
+      }
+      return true;
+    }
     if (expected instanceof Map) {
       if (!(actual instanceof Map)) return false;
       Map<String, Object> exp = (Map<String, Object>) expected;
@@ -179,5 +190,23 @@ class ReplayerContractTest {
       return true;
     }
     return Objects.equals(actual, expected);
+  }
+
+  @Test
+  void anObjectExpectationReadsAnArrayByIndexAndLength() {
+    List<Object> spans =
+        List.of(Map.of("inner", "A", "start", 0), Map.of("inner", "B", "start", 9));
+    assertTrue(subsetMatch(spans, Map.of("1", Map.of("inner", "B"), "length", 2)));
+    assertTrue(!subsetMatch(spans, Map.of("length", 1)));
+    assertTrue(!subsetMatch(List.of(), Map.of("0", Map.of("inner", "A"))));
+    assertTrue(!subsetMatch(spans, Map.of("01", Map.of("inner", "B"))));
+  }
+
+  /** Read {@code key} from {@code array} as a JavaScript property lookup would. */
+  private static Object arrayMember(List<Object> array, String key) {
+    if (key.equals("length")) return array.size();
+    if (!key.matches("0|[1-9][0-9]{0,8}")) return null;
+    int index = Integer.parseInt(key);
+    return index < array.size() ? array.get(index) : null;
   }
 }

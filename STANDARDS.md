@@ -13,13 +13,13 @@ Design, code quality, testing, and decision-making rules for this project. All c
 
 ## Code Quality
 
-- **Javadoc on the public API.** Every public class, interface, record, and method gets Javadoc for purpose and contract, not a description of what the code does. Document parameters, return values, and thrown exceptions; the published modules ship a javadoc jar, so this is user-facing reference material.
+- **Javadoc on the public API.** Every public class, interface, record, and method gets Javadoc for purpose and contract, not a description of what the code does. Document parameters, return values, and thrown exceptions; the published module ships a javadoc jar, so this is user-facing reference material.
 
 - **Comments explain WHY, not WHAT.** Only comment when the next developer might not understand why you didn't do the obvious thing. Explain constraints, workarounds, hidden dependencies, not logic flow.
 
 - **Formatting is google-java-format, enforced by Spotless.** `mvn verify` fails on drift; run `mvn spotless:apply` before committing. Never hand-align code or argue style in review; the formatter is the style guide.
 - **Records for data carriers, interfaces for boundaries.** Immutable domain data is a `record` with compact canonical constructors for validation. Behavior contracts are interfaces; concrete implementations stay out of API signatures.
-- **Generated and handwritten code never mix.** Generated types land in `types/target/generated-sources` via `make regen` and are never committed or hand-edited. Anything that must diverge from the generator's output belongs in a handwritten class in `src/main/java`.
+- **Generated and handwritten code never mix.** Generated types land in `client/target/generated-sources` via `make regen` and are never committed or hand-edited. Anything that must diverge from the generator's output belongs in a handwritten class in `src/main/java`.
 - **Zero trust at public boundaries.** Validate all inputs on the public API and external API responses; fail fast with clear exceptions at the boundary. Trust internal calls between private methods.
 - **No warnings left behind.** Compile clean. Remove unused imports and dead members instead of suppressing them; use `@SuppressWarnings` only with a comment saying why the warning is wrong here.
 

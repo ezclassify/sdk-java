@@ -17,6 +17,10 @@ public final class ContextCrosswalk {
   /**
    * Translate a source marking through a crosswalk declared by the context.
    *
+   * <p>Each outcome's {@code disposition} is a mapping's decision, {@code unmapped}, or {@code
+   * not-selected} for a candidate that lost a selection. A {@code not-selected} outcome is not an
+   * {@code omit}, which is a reviewed decision to drop the assertion.
+   *
    * @param crosswalkId crosswalk artifact id declared by the context
    * @param marking source marking text
    * @return the completed or forbidden translation under the resolved context envelope
@@ -33,6 +37,10 @@ public final class ContextCrosswalk {
 
   /**
    * Translate structured source assertions through a crosswalk declared by the context.
+   *
+   * <p>Each outcome's {@code disposition} is a mapping's decision, {@code unmapped}, or {@code
+   * not-selected} for a candidate that lost a selection. A {@code not-selected} outcome is not an
+   * {@code omit}, which is a reviewed decision to drop the assertion.
    *
    * @param crosswalkId crosswalk artifact id declared by the context
    * @param assertions structured source assertions

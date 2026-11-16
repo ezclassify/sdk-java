@@ -7,10 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ezclassify.rest.contract.Assertion;
+import com.ezclassify.rest.contract.AssertionConfidence;
 import com.ezclassify.rest.contract.DocumentAuditReport;
+import com.ezclassify.rest.contract.GuideWhenNode;
 import com.ezclassify.rest.contract.ProcessResult;
-import com.ezclassify.rest.contract.Reproducibility;
-import com.ezclassify.rest.contract.SourceReference;
 import com.ezclassify.rest.contract.ValidateResult;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
@@ -25,36 +25,32 @@ class WireJsonTest {
   @Test
   void anUnknownTokenSurvivesDecodeAndReEncodeByteForByte() {
     String wire =
-        "{\"reproducibility\":\"pinned\",\"snapshotId\":\"snap-1\",\"providerId\":\"idp\"}";
+        "{\"categoryId\":\"c\",\"conceptId\":\"k\",\"confidence\":\"future-level\","
+            + "\"source\":\"parse\"}";
 
-    SourceReference decoded =
-        WireJson.fromTree(JsonParser.parseString(wire), SourceReference.class);
+    Assertion decoded = WireJson.fromTree(JsonParser.parseString(wire), Assertion.class);
 
-    assertFalse(decoded.reproducibility().isKnown());
+    assertFalse(decoded.confidence().isKnown());
     assertEquals(wire, WireJson.toTree(decoded).toString());
   }
 
   @Test
   void aDeclaredTokenDecodesToTheCanonicalConstant() {
     // Negative control for the unknown case: a declared token is the shared constant.
-    SourceReference decoded =
-        WireJson.fromTree(
-            JsonParser.parseString("{\"reproducibility\":\"best-effort\"}"), SourceReference.class);
+    Assertion decoded =
+        WireJson.fromTree(JsonParser.parseString("{\"confidence\":\"certain\"}"), Assertion.class);
 
-    assertSame(Reproducibility.BEST_EFFORT, decoded.reproducibility());
+    assertSame(AssertionConfidence.CERTAIN, decoded.confidence());
   }
 
   @Test
   void aNumberInsideAnUntypedValueKeepsItsLiteral() {
-    // Assertion metadata is untyped; an integer must not come back as a double.
-    String wire =
-        "{\"categoryId\":\"c\",\"conceptId\":\"k\",\"confidence\":\"certain\","
-            + "\"metadata\":{\"n\":3,\"big\":12345678901,\"d\":1.50,\"list\":[1,2.5]},"
-            + "\"source\":\"parse\"}";
+    // A guide condition value is untyped; an integer must not come back as a double.
+    String wire = "{\"operator\":\"count_gt\",\"value\":3}";
 
-    Assertion decoded = WireJson.fromTree(JsonParser.parseString(wire), Assertion.class);
+    GuideWhenNode decoded = WireJson.fromTree(JsonParser.parseString(wire), GuideWhenNode.class);
 
-    assertEquals(Integer.valueOf(3), decoded.metadata().get("n"));
+    assertEquals(Integer.valueOf(3), decoded.value());
     assertEquals(wire, WireJson.toTree(decoded).toString());
   }
 
@@ -63,9 +59,7 @@ class WireJsonTest {
     // Gson's nextString() would turn 5 into the token "5"; a contract enum is always a string.
     assertThrows(
         JsonParseException.class,
-        () ->
-            WireJson.fromTree(
-                JsonParser.parseString("{\"reproducibility\":5}"), SourceReference.class));
+        () -> WireJson.fromTree(JsonParser.parseString("{\"confidence\":5}"), Assertion.class));
   }
 
   @Test

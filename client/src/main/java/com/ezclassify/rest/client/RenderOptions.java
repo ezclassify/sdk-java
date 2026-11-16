@@ -1,16 +1,58 @@
 package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.RenderPreservation;
+import java.util.Objects;
 
 /**
  * Immutable choices for one render operation.
  *
  * <p>Null omits an option.
- *
- * @param outputFormat The declared rendering output address; null uses the server default.
- * @param preservation The required preservation behavior; null uses the server default.
  */
-public record RenderOptions(String outputFormat, RenderPreservation preservation) {
+public final class RenderOptions {
+  private final String outputFormat;
+  private final RenderPreservation preservation;
+
+  private RenderOptions(String outputFormat, RenderPreservation preservation) {
+    this.outputFormat = outputFormat;
+    this.preservation = preservation;
+  }
+
+  /**
+   * The declared rendering output address; null uses the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public String outputFormat() {
+    return outputFormat;
+  }
+
+  /**
+   * The required preservation behavior; null uses the server default.
+   *
+   * @return the option, or null when omitted
+   */
+  public RenderPreservation preservation() {
+    return preservation;
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) return true;
+    if (!(other instanceof RenderOptions that)) return false;
+    return Objects.equals(outputFormat, that.outputFormat)
+        && Objects.equals(preservation, that.preservation);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(outputFormat, preservation);
+  }
+
+  @Override
+  public String toString() {
+    return "RenderOptions[outputFormat=" + outputFormat + ", preservation=" + preservation + "]";
+  }
+
   /**
    * Omit every optional choice.
    *

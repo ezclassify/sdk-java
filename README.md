@@ -1,7 +1,7 @@
 # <img src="assets/icon.svg" alt="" width="32"> EzClassify Java SDK
 
-[![CI](https://github.com/ezclassify/client-java/actions/workflows/ci.yml/badge.svg)](https://github.com/ezclassify/client-java/actions/workflows/ci.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/com.ezclassify.rest/client?label=com.ezclassify.rest%3Aclient)](https://central.sonatype.com/artifact/com.ezclassify.rest/client)
+[![CI](https://github.com/ezclassify/sdk-java/actions/workflows/ci.yml/badge.svg)](https://github.com/ezclassify/sdk-java/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.ezclassify/ezclassify-rest-client?label=com.ezclassify%3Aezclassify-rest-client)](https://central.sonatype.com/artifact/com.ezclassify/ezclassify-rest-client)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Java 17+](https://img.shields.io/badge/java-17%2B-orange.svg)](pom.xml)
 
@@ -17,8 +17,8 @@ health and Context discovery use the deployment endpoint.
 
 ```xml
 <dependency>
-  <groupId>com.ezclassify.rest</groupId>
-  <artifactId>client</artifactId>
+  <groupId>com.ezclassify</groupId>
+  <artifactId>ezclassify-rest-client</artifactId>
   <version>1.0.0</version>
 </dependency>
 ```
@@ -27,10 +27,10 @@ Java 17+.
 
 ## Quickstart
 
-Start with the Cedar Valley replay server. It answers with responses recorded from a real EzClassify runtime for a fictional school district, so you can see your integration work before you have a runtime or credentials. Node.js 22 or 24 is needed for the replay server only; the client is plain Java 17+.
+Start with the free developer runtime. It is one container that serves the built-in Contexts, such as `capco-demo` and `cedar-valley`, over real HTTP, with no license, credentials or account. The client is plain Java 17+.
 
 ```sh
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
+docker run --rm -p 3000:8080 ghcr.io/ezclassify/developer-runtime
 ```
 
 Then connect with the normal client. Context `cedar-valley`, version `1.0.0`:
@@ -41,7 +41,7 @@ import com.ezclassify.rest.client.EzClassifyContext;
 
 public class QuickStart {
     public static void main(String[] args) {
-        try (EzClassifyClient client = new EzClassifyClient("http://127.0.0.1:4010")) {
+        try (EzClassifyClient client = new EzClassifyClient("http://localhost:3000")) {
             EzClassifyContext context = client.context("cedar-valley", "1.0.0");
             var result = context.scheme().process("INTERNAL").result();
             System.out.println(result.rendered() + " valid=" + result.valid());
@@ -54,18 +54,18 @@ public class QuickStart {
 INTERNAL valid=true
 ```
 
-The server replays a finite set of recorded requests: `PUBLIC`, `INTERNAL`, `CONFIDENTIAL`, the full district marking, access decisions, guides and a few recorded errors. The [scenario catalog](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server/scenarios/cedar-valley) lists them all. A request nobody recorded gets a 501 diagnostic, which the client raises as an `EzClassifyClientException` with `statusCode() == 501`; the server never computes a new answer.
+`cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
 
 ### Swap to your runtime
 
-When the integration works, point the same code at your runtime. Change the base URL, the Context id and version, and add credentials. Your runtime administrator supplies the endpoint, the caller access token, and the Context token where your deployment requires one.
+When the integration works, point the same code at your runtime. Four values change: the base URL, the Context, your application id and the caller token. Your runtime administrator supplies them, along with the Context token where your deployment requires one.
 
 ```java
 import com.ezclassify.rest.client.EzClassifyClient;
 import com.ezclassify.rest.client.EzClassifyContext;
 import com.ezclassify.rest.client.RestClientCredentials;
 
-var credentials = new RestClientCredentials(accessToken, contextToken);
+var credentials = new RestClientCredentials(accessToken, contextToken, "your-application-id");
 try (EzClassifyClient client = new EzClassifyClient("https://rest-api.example.com", credentials)) {
     System.out.println(client.listContexts());
 
@@ -76,16 +76,13 @@ try (EzClassifyClient client = new EzClassifyClient("https://rest-api.example.co
 }
 ```
 
-For application access, supply the opaque application credential instead of a Context token. If the application definition requires a verified user, also supply that caller's access token from your customer identity provider:
+The application id in that example is the id your application is registered under; the deployment counts its requests by it. It is not a credential and authorizes nothing, so it can travel with or without tokens:
 
 ```java
-var applicationCredential = java.util.Objects.requireNonNull(
-    System.getenv("EZC_APPLICATION_CREDENTIAL"), "Set EZC_APPLICATION_CREDENTIAL.");
-String userAccessToken = null; // Set from this caller when the published policy requires a verified user.
-var credentials = new RestClientCredentials(userAccessToken, null, applicationCredential);
+var credentials = new RestClientCredentials(userAccessToken, contextToken, "case-intake-portal");
 ```
 
-The SDK sends the grant unchanged as `X-EzClassify-Application-Grant` only on Context discovery, version, binding and operation routes; health omits it. A supplied caller token travels independently as `Authorization: Bearer`. The SDK rejects an application grant combined with a Context token, or a blank or malformed credential. It redacts credentials from diagnostics and does not decode, renew or replay them. The JDK transport does not follow redirects. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
+The SDK sends the id on Context routes as `x-ezclassify-application-id`; health checks do not carry it. A request without it, or with an id the deployment has not registered, is served the same way. A supplied caller token travels independently as `Authorization: Bearer`. The id is 1 to 128 printable ASCII characters (0x21 to 0x7e, so no spaces); the SDK refuses any other id when the credentials are constructed. A value that does not match is served and counted as unidentified by the deployment. The SDK also redacts the tokens from diagnostics. The JDK transport does not follow redirects. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
 
 Use an `https://` endpoint anywhere the tokens leave the machine; a local development server on loopback may use `http://`. The client enforces this: supplying credentials for a plaintext `http://` endpoint on a non-loopback host is rejected at construction, as is a base URL that is not an absolute `http`/`https` URL.
 
@@ -95,7 +92,7 @@ Pass a concrete version to pin the binding, or `"latest"` to track the newest on
 
 Scheme operations that read a marking have overloads that take their format choices under the names the wire uses. `inputFormat` says what the input is read as; pass `null` and recognition works it out. `outputFormat` picks the output the result is written in; pass `null` for the default output, which for a scheme that declares surfaces depends on the marking's role (see below). `surface` names which of the scheme's scopes the input is, for a fragment such as a portion; pass `null` and the input is treated as a whole marking. Each operation takes only the options its request declares, so `diff` takes just `inputFormat`, `suggestForCategories` and the facts overloads of `validate` take no `inputFormat`, and `render` and `applyPreset` only produce output, so they take a single `outputFormat`.
 
-A scheme that declares surfaces names its outputs as `surface/view` addresses, such as `sensitivity/short`. An `inputFormat` may then name a view, by id or address, or one of the forms that view is read in, and `recognition().inputFormat()` reports the view the text was read as. With no `outputFormat`, each surface the result writes comes back in its default for the marking's role: the role in the request's `context` when it gives one, otherwise the one recognition decides and reports in `recognition().role()`. A part and a whole can therefore come back in different views.
+A scheme that declares surfaces names its outputs as `surface/view` addresses, such as `sensitivity/short`. An `inputFormat` may then name a view, by id or address, or one of the forms that view is read in, and `recognition().inputFormat()` reports the view the text was read as. A named `outputFormat` is written alone. With none, each surface the result writes comes back in its default for the marking's role, except that a default writing every other surface's scope beside its own comes back alone: the role in the request's `context` when it gives one, otherwise the one recognition decides and reports in `recognition().role()`. A part and a whole can therefore come back in different views.
 
 Scheme operations take an immutable options object built with `ProcessOptions.builder()`, `ValidateOptions.builder()`, `ExplainOptions.builder()`, `SuggestOptions.builder()`, `AggregateOptions.builder()`, `ScanOptions.builder()`, or `RenderOptions.builder()`. The one-argument calls use defaults. Facts use `FactsValidateOptions`, `FactsSuggestOptions`, and `FactsAggregateOptions`, which have no text input-format setter. Suggestions take text or facts, exactly one; typed text together with chosen facts belongs in `process` with `suggestFor`.
 
@@ -148,7 +145,7 @@ why.entries().forEach(step -> System.out.println(step.stage() + ": " + step.deta
 
 ## Reading the scheme itself
 
-Seven reads answer what the composed scheme declares, rather than operating on a marking. They return the contract's view types directly, with no `result` envelope:
+Six reads answer what the composed scheme declares, rather than operating on a marking. They return the contract's view types directly, with no `result` envelope:
 
 | Call | Returns |
 |------|---------|
@@ -156,7 +153,6 @@ Seven reads answer what the composed scheme declares, rather than operating on a
 | `scheme().concepts()` | `List<ConceptView>` |
 | `scheme().categories()` | `List<CategoryView>`, in declared order |
 | `scheme().formats()` | `List<FormatView>`: each format's id, surface, layout and syntax |
-| `scheme().grammar()` | `SchemeGrammar`: case sensitivity and whitespace handling |
 | `scheme().scopes()` | `List<SchemeScope>`, in declaration order, empty when none are declared |
 | `scheme().labelPresets()` | `List<LabelPresetView>`: id, label, description and scope, empty when none are declared |
 
@@ -171,29 +167,37 @@ for (FormatView format : scheme.formats()) {
 }
 ```
 
-All but `labelPresets()` take the context-local key of another scheme the Context holds, such as a crosswalk's source or target: `scheme.categories("source")`. Without one they read the primary scheme. Presets belong to the primary scheme, the one `applyPreset` expands them in, so `labelPresets()` takes no key. A preset is listed by name and scope only; `applyPreset` is the way to expand one.
+A preset is listed by name and scope only; `applyPreset` is the way to expand one.
+
+### Another scheme in the Context
+
+A Context can hold more than one scheme, such as the two sides of a crosswalk. `context.scheme()` is the primary scheme. `context.schemes().get(key)` returns the view of any scheme the Context holds, named by its Context-local key; `context.describeContext().schemes()` lists those keys as each descriptor's `selector()`. The view has every operation and read `scheme()` has, and none of them take a key: the view sends it as `?scheme=` on every request.
+
+```java
+ContextScheme source = context.schemes().get("source");
+
+var checked = source.validate("MARKING");
+List<CategoryView> categories = source.categories();
+```
+
+The server decides which keys exist. A key the Context does not hold is a 404 `scheme_not_found` on the first call, and it is never answered by the primary scheme. `schemes()` keeps one view per key, and each view's answers are cached on their own.
 
 ## Response caching
 
-A Context handle answers a repeated identical question from memory. These operations are cached: `process`, `validate`, `explain`, `normalize`, `render`, `diff`, `aggregate`, `aggregateAssertions`, `applyPreset`, `suggest`, `suggestForCategories`, `scan`, `describeConcept`, and `access().rules()`. Every other operation reaches the server on every call.
+A Context handle answers a repeated identical question from memory. These operations are cached: `process`, `validate`, `explain`, `render`, `diff`, `aggregate`, `aggregateAssertions`, `applyPreset`, `suggest`, `suggestForCategories`, `scan`, `describeConcept`, `access().rules()`, `access().marking()`, and `describeCrosswalks()`. Every other operation reaches the server on every call.
 
-- **Keys.** Every field of the request is part of the key, so two `process` calls that name different `outputs` or `suggestFor` are two entries, and `explain` never answers from a `process` entry for the same input. Member order and members left unset do not change the key.
+- **Keys.** The scheme view and every field of the request are part of the key, so two `process` calls that name different `outputs` or `suggestFor` are two entries, and `explain` never answers from a `process` entry for the same input. Member order and members left unset do not change the key.
 - **Concurrent calls.** Identical calls made while one is in flight share that one HTTP request. A request that runs longer than its lifetime stays joinable.
 - **Failures.** A refused request and a 200 whose body is missing a required member are never kept. The next call goes back to the server.
 - **Results.** Every call gets its own freshly decoded result, so changing one never affects another caller or a later cached read.
 - **Lifetime.** A concrete Context version is immutable, so its entries stay until LRU eviction or `context.clearCache()`. A `latest` binding, and one that names no version, keeps entries for five minutes, two minutes for scans, and one hour for concept descriptions and the access-rule list.
 - **Invalidation.** A response that names a different resolved version than the one the entries were answered under clears them. So does a 401 and the runtime's constant `{"error":"not_found"}` refusal, whatever credential the handle holds. A 404 that names a missing concept or scheme is an answer about that resource and leaves the cache alone. A handle belongs to one caller identity; build a new one when the caller changes.
 
-Access checks reach the server on every call by default so each decision appears in its audit trail. Document and guide operations, `access().describeRequirements`, and `crosswalk().translate` are never cached, and neither are the [scheme reads](#reading-the-scheme-itself): `summary`, `concepts`, `categories`, `formats`, `grammar`, `scopes`, and `labelPresets` ask the server every time. A caller who accepts missing server audit records can opt into caching the two access checks, under a concrete Context version only. Asking for it on `latest` or without a version throws `IllegalArgumentException`:
-
-```java
-var options = new ContextCacheOptions(true, false);
-EzClassifyContext context = client.context("my-context", "1.0.0", options);
-```
+Access checks reach the server on every call so each decision appears in its audit trail. Document and guide operations, `access().describeRequirements`, and `crosswalk().translate` are never cached, and neither are the [scheme reads](#reading-the-scheme-itself): `summary`, `concepts`, `categories`, `formats`, `scopes`, and `labelPresets` ask the server every time.
 
 When supplying cache options or credentials, keep the version argument: `client.context("my-context", null, options)` or `EzClassifyClient.connect(baseUrl, "my-context", null, credentials)`. A `null` version lets the server choose while keeping these overloads unambiguous.
 
-Use `new ContextCacheOptions(false, true)` to disable response caching for a handle. The `clearCache()` method drops retained operation answers without dropping the Context binding or its description.
+Use `new ContextCacheOptions(true)` to disable response caching for a handle. The `clearCache()` method drops retained operation answers without dropping the Context binding or its description.
 
 ### Recording what answered
 
@@ -210,11 +214,12 @@ The description is read once when the handle connects and held, not cached with 
 
 ## Modules
 
-The Javadoc reference covers both shipped modules, including generated wire
-models. Internal transport helpers and repository tools are outside that public API.
+The SDK ships as one artifact, `com.ezclassify:ezclassify-rest-client`. It holds the HTTP client in
+`com.ezclassify.rest.client` and the generated wire types in `com.ezclassify.rest.contract`.
+The Javadoc reference covers both packages. Internal transport helpers and repository tools
+are outside that public API.
 
-- `contract`: generated wire DTOs and Java adapter projections.
-- `client`: HTTP client for the REST API.
+
 
 The SDK is a client only. Engine operation belongs to EzClassify's licensed runtime host.
 
@@ -228,18 +233,17 @@ versions are unsupported.
 
 ## Demo
 
-[`examples/sdk-tour/`](examples/sdk-tour/) walks ping, validate, process, aggregate, suggest and guide scan. By default it runs against the Cedar Valley replay server from the [quickstart](#quickstart), using inputs that server has recorded. Start the server, then install the reactor artifacts locally and run the example module:
+[`examples/sdk-tour/`](examples/sdk-tour/) walks ping, validate, process, aggregate, suggest and guide scan. It runs against the developer runtime from the [quickstart](#quickstart). Start the runtime, then install the reactor artifacts locally and run the example module:
 
 ```sh
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
-
 ./mvnw install -DskipTests --batch-mode --no-transfer-progress
 ./mvnw -pl examples/sdk-tour exec:java \
     -Dexec.mainClass=com.ezclassify.demo.ClientDemo \
+    -Dexec.args="http://localhost:3000 cedar-valley 1.0.0" \
     --batch-mode --no-transfer-progress
 ```
 
-To run it against a real runtime, pass the base URL, Context id and version as `-Dexec.args="<url> <context> <version>"` and substitute markings that Context recognizes. The tour builds an unauthenticated client, so use a test runtime that permits anonymous requests.
+To run it against your runtime, pass its base URL, Context id and version in `-Dexec.args` the same way and substitute markings that Context recognizes. The tour builds an unauthenticated client, so use a test runtime that permits anonymous requests.
 
 ## Errors and rate limits
 
@@ -283,14 +287,14 @@ try {
 
 ## Integration testing
 
-The replay server from the [quickstart](#quickstart) also records access decisions. Use them to check connectivity, response handling, and access-decision logging with your normal client. Supported requests are listed in the [scenario server guide](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration), and `--auth simulated` accepts a published test bearer if you want to rehearse credentials.
+The developer runtime from the [quickstart](#quickstart) also evaluates access decisions. Use it to check connectivity, response handling, and access-decision logging with your normal client.
 
 ```java
 import com.ezclassify.rest.client.EzClassifyClient;
 import com.ezclassify.rest.client.EzClassifyClientException;
 import java.util.Map;
 
-try (var client = new EzClassifyClient("http://127.0.0.1:4010")) {
+try (var client = new EzClassifyClient("http://localhost:3000")) {
     var ctx = client.context("cedar-valley", "1.0.0");
     var decision = ctx.access().checkByMarking("CONFIDENTIAL", Map.of()).result();
     System.out.println("granted=" + decision.granted());
@@ -309,13 +313,7 @@ resource reference. Apply your log retention and redaction policy to returned
 explanations too. A denied access decision is a successful response with
 `granted: false`; handle transport or authentication failures separately.
 
-Restart with `--scenario transient-error`, `rate-limit`, `unavailable`,
-`slow-response`, `disconnected`, `malformed-json`, or `malformed-envelope` to
-exercise failures on the recorded process request. Clear the client response
-cache or create a new client between runs so an earlier answer does not hide
-the scenario. The guide lists authentication, validation, empty-result, and
-complex access cases. These recordings test your integration, not the
-correctness of a production authorization policy.
+To rehearse transport failures such as a 429, a dropped connection or a malformed body, run the Apache-2.0 [conformance server](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration) (Node.js 22 or 24). It replays recorded failures on demand, which the developer runtime does not produce. Clear the client response cache or create a new client between runs so an earlier answer does not hide the scenario.
 
 ## Reporting issues
 

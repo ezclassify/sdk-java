@@ -1,7 +1,7 @@
 package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.AccessRuleDescription;
-import com.ezclassify.rest.contract.AssessmentLimitation;
+import com.ezclassify.rest.contract.ContextCrosswalkDescriptor;
 import com.ezclassify.rest.contract.ContextOperationResult;
 import com.ezclassify.rest.contract.ContextResolution;
 import com.ezclassify.rest.contract.CtxComponentDescriptor;
@@ -34,13 +34,15 @@ import java.util.function.Function;
  *
  * <p>Obtain one with {@link EzClassifyClient#connect(String, String, String)}, then reach the
  * operations through {@link #scheme()}, {@link #guide()}, {@link #access()}, {@link #crosswalk()},
- * and {@link #document()}:
+ * and {@link #document()}. Another scheme the Context holds is reached by its key through {@link
+ * #schemes()}:
  *
  * <pre>{@code
  * EzClassifyContext ctx = EzClassifyClient.connect("http://localhost:8080", "my-ctx", "1.0");
  * var response = ctx.scheme().process("MARKING");
  * ProcessResult r = response.result();
  * String resolved = ctx.resolvedVersion(); // concrete version the server resolved
+ * var source = ctx.schemes().get("source").validate("MARKING"); // another scheme it holds
  * }</pre>
  */
 public final class EzClassifyContext {
@@ -63,7 +65,6 @@ public final class EzClassifyContext {
           "scheme/process",
           "scheme/validate",
           "scheme/explain",
-          "scheme/normalize",
           "scheme/render",
           "scheme/diff",
           "scheme/aggregate",
@@ -92,6 +93,8 @@ public final class EzClassifyContext {
   private final ResponseCache responseCache;
   private final Duration requestTimeout;
   private final Object describeLock = new Object();
+  private final ContextScheme primaryScheme = new ContextScheme(this, null);
+  private final ContextSchemes schemes = new ContextSchemes(this);
   private volatile String resolvedVersion;
   private volatile CtxDescribeResponseBody description;
 
@@ -153,10 +156,6 @@ public final class EzClassifyContext {
     // An empty version is how a configuration says it names none, the same as null.
     this.version = version == null || version.isBlank() ? null : version;
     this.cacheOptions = cacheOptions == null ? ContextCacheOptions.defaults() : cacheOptions;
-    if (this.cacheOptions.cacheAccessDecisions() && !pinned()) {
-      throw new IllegalArgumentException(
-          "access decision caching requires a concrete Context version");
-    }
     this.httpClient = httpClient;
   }
 
@@ -219,12 +218,22 @@ public final class EzClassifyContext {
   }
 
   /**
-   * Scheme-domain operations bound to this context.
+   * Scheme-domain operations bound to this Context's primary scheme.
    *
-   * @return a handle for the scheme-domain operations on this context
+   * @return the view of the primary scheme, which sends no scheme selector
    */
   public ContextScheme scheme() {
-    return new ContextScheme(this);
+    return primaryScheme;
+  }
+
+  /**
+   * The schemes this Context holds, each reached by its key with {@link
+   * ContextSchemes#get(String)}. {@link #describeContext()} lists the key of every one.
+   *
+   * @return this Context's schemes, the same instance on every call
+   */
+  public ContextSchemes schemes() {
+    return schemes;
   }
 
   /**
@@ -308,6 +317,49 @@ public final class EzClassifyContext {
     }
   }
 
+  /**
+   * Every crosswalk this Context holds, in declaration order, empty when it declares none. Each one
+   * names its source and target by the scheme selectors {@link #describeContext()} lists under
+   * {@code schemes}, and carries the mappings and selections a translation applies.
+   *
+   * <p>The inventory goes through the response cache like the access rule list: an hour on an
+   * unpinned binding, and for the handle's life under a concrete version.
+   *
+   * @return every crosswalk in the Context
+   * @throws EzClassifyClientException if the server refuses the request, cannot be reached, or
+   *     answers an inventory missing a required member
+   */
+  public List<ContextCrosswalkDescriptor> describeCrosswalks() {
+    if (cacheOptions.disableCache()) {
+      return parseCrosswalks(sendCtx("GET", "crosswalk/describe", null));
+    }
+    String key = cacheKey("GET", "crosswalk/describe", null);
+    String response =
+        responseCache.get(
+            key,
+            ttlNanos("crosswalk/describe"),
+            () -> {
+              String raw = sendCtx("GET", "crosswalk/describe", null, key);
+              parseCrosswalks(raw);
+              return raw;
+            });
+    return parseCrosswalks(response);
+  }
+
+  private static List<ContextCrosswalkDescriptor> parseCrosswalks(String raw) {
+    JsonObject response = Json.parseObject(raw);
+    if (!response.has("crosswalks") || !response.get("crosswalks").isJsonArray()) {
+      throw new MalformedResponseException(
+          "Context crosswalk/describe response is missing required crosswalks array");
+    }
+    try {
+      return List.copyOf(
+          WireJson.listFromTree(response.get("crosswalks"), ContextCrosswalkDescriptor.class));
+    } catch (JsonParseException e) {
+      throw malformed(e);
+    }
+  }
+
   private CtxDescribeResponseBody fetchDescription() {
     CtxDescribeResponseBody fetched = parseDescription(sendCtx("GET", "", null));
     description = fetched;
@@ -375,7 +427,7 @@ public final class EzClassifyContext {
 
   <T> ContextOperationResult<T> getResult(
       String opWithQuery, Function<JsonElement, T> resultParser) {
-    if (cacheOptions.disableCache() || !opWithQuery.startsWith("scheme/describe-concept?")) {
+    if (cacheOptions.disableCache() || !"scheme/describe-concept".equals(route(opWithQuery))) {
       return parseResult(getJson(opWithQuery), resultParser, EmptyResult.REFUSED);
     }
     String key = cacheKey("GET", opWithQuery, null);
@@ -396,15 +448,13 @@ public final class EzClassifyContext {
     try {
       ContextResolution resolution =
           WireJson.fromTree(requiredObject(envelope, "resolution"), ContextResolution.class);
-      List<AssessmentLimitation> limitations =
-          WireJson.listFromTree(envelope.get("operationLimitations"), AssessmentLimitation.class);
       DocumentResponseProjection projection =
           envelope.has("responseProjection") && !envelope.get("responseProjection").isJsonNull()
               ? WireJson.fromTree(
                   envelope.get("responseProjection"), DocumentResponseProjection.class)
               : null;
       return new ContextOperationResult<>(
-          resolution, resultParser.apply(requiredResult(envelope, empty)), limitations, projection);
+          resolution, resultParser.apply(requiredResult(envelope, empty)), projection);
     } catch (JsonParseException e) {
       throw malformed(e);
     }
@@ -419,9 +469,13 @@ public final class EzClassifyContext {
         "Context response is malformed: " + cause.getMessage(), cause);
   }
 
-  List<AccessRuleDescription> accessRules() {
+  /** The access policy as {@code access/rules} answers it: its rules and its own marking. */
+  record AccessPolicy(List<AccessRuleDescription> rules, String marking) {}
+
+  /** Read {@code access/rules}, the one cache entry every read of the policy shares. */
+  AccessPolicy accessPolicy() {
     if (cacheOptions.disableCache()) {
-      return parseAccessRules(sendCtx("GET", "access/rules", null));
+      return parseAccessPolicy(sendCtx("GET", "access/rules", null));
     }
     String key = cacheKey("GET", "access/rules", null);
     String response =
@@ -430,20 +484,28 @@ public final class EzClassifyContext {
             ttlNanos("access/rules"),
             () -> {
               String raw = sendCtx("GET", "access/rules", null, key);
-              parseAccessRules(raw);
+              parseAccessPolicy(raw);
               return raw;
             });
-    return parseAccessRules(response);
+    return parseAccessPolicy(response);
   }
 
-  private static List<AccessRuleDescription> parseAccessRules(String raw) {
+  private static AccessPolicy parseAccessPolicy(String raw) {
     JsonObject response = Json.parseObject(raw);
     if (!response.has("rules") || !response.get("rules").isJsonArray()) {
       throw new MalformedResponseException(
           "Context access/rules response is missing required rules array");
     }
+    JsonElement marking = response.get("marking");
+    if (marking != null
+        && !marking.isJsonNull()
+        && !(marking.isJsonPrimitive() && marking.getAsJsonPrimitive().isString())) {
+      throw new MalformedResponseException("Context access/rules response marking is not a string");
+    }
     try {
-      return List.copyOf(WireJson.listFromTree(response.get("rules"), AccessRuleDescription.class));
+      return new AccessPolicy(
+          List.copyOf(WireJson.listFromTree(response.get("rules"), AccessRuleDescription.class)),
+          marking == null || marking.isJsonNull() ? null : marking.getAsString());
     } catch (JsonParseException e) {
       throw malformed(e);
     }
@@ -495,14 +557,17 @@ public final class EzClassifyContext {
   }
 
   private boolean cacheablePost(String op) {
-    return CACHED_POST_OPERATIONS.contains(op)
-        || (cacheOptions.cacheAccessDecisions() && "access/check".equals(op));
+    String route = route(op);
+    return CACHED_POST_OPERATIONS.contains(route);
   }
 
-  private long ttlNanos(String op) {
+  private long ttlNanos(String opWithQuery) {
     if (pinned()) return Long.MAX_VALUE;
+    String op = route(opWithQuery);
     if ("scheme/scan".equals(op)) return Duration.ofMinutes(2).toNanos();
-    if ("scheme/describe-concept".equals(op) || "access/rules".equals(op)) {
+    if ("scheme/describe-concept".equals(op)
+        || "access/rules".equals(op)
+        || "crosswalk/describe".equals(op)) {
       return Duration.ofHours(1).toNanos();
     }
     return Duration.ofMinutes(5).toNanos();
@@ -641,8 +706,17 @@ public final class EzClassifyContext {
    * no version leaves the version segment out of the URL, but it is the same operation.
    */
   private static String operation(String method, String op) {
-    int query = op.indexOf('?');
-    String route = query < 0 ? op : op.substring(0, query);
+    String route = route(op);
     return method + " /v1/ctx/{ctxId}/{version}" + (route.isEmpty() ? "" : "/" + route);
+  }
+
+  /**
+   * The route an operation path names, without its query. A scheme view's selector travels in the
+   * query, so the route is what picks the operation's caching rules and contract shape, and the
+   * full path, query included, is what keys its cached answer.
+   */
+  private static String route(String opWithQuery) {
+    int query = opWithQuery.indexOf('?');
+    return query < 0 ? opWithQuery : opWithQuery.substring(0, query);
   }
 }

@@ -13,7 +13,7 @@ plus Node to regenerate sources:
   `openjdk-17-jdk` package, or `brew install openjdk@17` on macOS.
 - **Maven 3.10.0.** The checked-in wrapper downloads the reviewed distribution;
   `make` and CI use it by default. An installed Maven can be selected with `make MVN=mvn`.
-- **Node.js 22 or 24** on the path, because the `types` module regenerates its records
+- **Node.js 22 or 24** on the path, because the client module regenerates its wire records
   during the build. [`tools/package.json`](tools/package.json) declares that floor and CI builds on
   Node 22.
 
@@ -32,10 +32,10 @@ with the other SDKs.
 | Action | Native command | Notes |
 |--------|----------------|-------|
 | Build (compile, no tests) | `./mvnw package -DskipTests` | or `make build`. Builds every reactor module. |
-| Generate API reference | `make docs` | Aggregate Javadoc for both shipped modules at `target/reports/apidocs/index.html`. |
+| Generate API reference | `make docs` | Javadoc for the shipped module at `target/reports/apidocs/index.html`. |
 | Test (all modules) | `./mvnw verify` | or `make test`. `verify` also runs the Spotless format check that `./mvnw test` skips; the architecture and API-surface gates run through `make check-architecture` and `make check-api-surface`. `make test-verbose` runs Surefire without parallel execution, in one fresh fork per test class. |
 | Test a single module | `./mvnw test -pl client` | Add `-Dtest=ConformanceTest` to run only the conformance vectors. |
-| Regenerate generated sources | `make regen` | Refreshes [`types/`](types/) records after a spec-update PR. There is no local re-vendor target; see below. |
+| Regenerate generated sources | `make regen` | Refreshes the generated records in [`client/`](client/) after a spec-update PR. There is no local re-vendor target; see below. |
 | Package the artifacts | `./mvnw package` | Builds the publishable JARs into each module's `target/`. |
 | Install to local Maven repo | `./mvnw install` | Makes the SDK resolvable by a sibling project on this machine. |
 | Clean | `make clean` (`make distclean` for the regen toolchain too) | Removes the Maven build output; `distclean` also drops `tools/node_modules`. The vendored spec bundle is never cleaned; it is bot-managed input. |
@@ -53,7 +53,7 @@ transport/decoder helpers are outside the public reference.
 ## The vendored spec and upstream engine
 
 - **The spec is vendored, not authored here.** The wire types in
-  the [`types/`](types/) module are generated from OpenAPI and JSON Schemas under
+  the [`client/`](client/) module are generated from OpenAPI and JSON Schemas under
   [`vendor/spec/`](vendor/spec/). The Java package is `com.ezclassify.rest.contract`.
   The OpenAPI document is owned by the [ezclassify/contracts](https://github.com/ezclassify/contracts) repo and
   mirrored into this repo by the EzClassify spec bot, which commits as

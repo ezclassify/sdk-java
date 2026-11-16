@@ -133,17 +133,12 @@ class GenScriptTest {
     assertTrue(accessRule.contains("SUPERSET = new AccessRule(\"superset\""));
     assertTrue(accessRule.contains("INCLUDES = new AccessRule(\"includes\""));
     assertTrue(accessRule.contains("EXACT = new AccessRule(\"exact\""));
-    assertTrue(accessRule.contains("ANY = new AccessRule(\"any\""));
     assertTrue(
         accessRule.contains(
             "public final class AccessRule extends ExpandableStringEnum<AccessRule.Value>"));
     assertTrue(accessRule.contains("static AccessRule fromWire(String token)"));
     assertTrue(accessRule.contains("static AccessRule fromString(String token)"));
     assertFalse(Files.exists(outputDir.resolve("openapi")));
-
-    String sourceReference = Files.readString(outputDir.resolve("SourceReference.java"));
-    assertTrue(sourceReference.contains("Reproducibility reproducibility"));
-    assertTrue(sourceReference.contains("String snapshotId"));
 
     String compilationStatus = Files.readString(outputDir.resolve("GuideCompilationStatus.java"));
     assertTrue(
@@ -168,23 +163,8 @@ class GenScriptTest {
         Files.readString(outputDir.resolve("Assertion.java"))
             .contains("AssertionConfidence confidence"));
     assertTrue(
-        Files.readString(outputDir.resolve("ValidationError.java"))
-            .contains("ValidationSeverity severity"));
-    assertTrue(
-        Files.readString(outputDir.resolve("AccessScenarioAssessment.java"))
-            .contains("AccessScenarioBasis basis"));
-    assertTrue(
-        Files.readString(outputDir.resolve("AccessScenarioAssessment.java"))
-            .contains("EffectiveDocumentTarget target"));
-    assertTrue(
         Files.readString(outputDir.resolve("DocumentAuditReport.java")).contains("String whole"));
-    assertTrue(
-        Files.readString(outputDir.resolve("DocumentAccessAssessment.java"))
-            .contains("AccessScenarioAssessment projected"));
     assertTrue(Files.readString(outputDir.resolve("RuleCondition.java")).contains("Object value"));
-    assertTrue(
-        Files.readString(outputDir.resolve("TraceRepair.java"))
-            .contains("RepairConfidence confidence"));
     assertTrue(
         Files.readString(outputDir.resolve("Fix.java"))
             .contains("java.util.List<FixConceptReference> keeps"));
@@ -260,9 +240,7 @@ class GenScriptTest {
     assertEquals(0, process.waitFor(), () -> "generator failed:\n" + output);
 
     for (String view :
-        new String[] {
-          "CategoryView", "FormatView", "LabelPresetView", "SchemeGrammar", "SchemeSummary"
-        }) {
+        new String[] {"CategoryView", "FormatView", "LabelPresetView", "SchemeSummary"}) {
       assertTrue(Files.exists(outputDir.resolve(view + ".java")), view);
     }
     // A union of string constants is a closed string enum, so it is as open to a newer server as
@@ -286,9 +264,9 @@ class GenScriptTest {
     Path openapi = moduleDir.resolveSibling("vendor/spec/openapi.yaml");
     String source = Files.readString(openapi);
     String nullableTarget =
-        "        target:\n"
+        "        wholeValidation:\n"
             + "          anyOf:\n"
-            + "            - $ref: \"#/components/schemas/EffectiveDocumentTarget\"\n"
+            + "            - $ref: \"#/components/schemas/MarkingValidation\"\n"
             + "            - type: \"null\"\n";
     assertTrue(source.contains(nullableTarget), "the reviewed nullable target must be present");
     Path ambiguousOpenapi = Files.createTempFile("java-ambiguous-openapi", ".yaml");
@@ -310,7 +288,7 @@ class GenScriptTest {
             .start();
     String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     assertFalse(process.waitFor() == 0, "ambiguous public union must be rejected");
-    assertTrue(output.contains("unsupported public union at AccessScenarioAssessment.target"));
+    assertTrue(output.contains("unsupported public union at DocumentAuditReport.wholeValidation"));
   }
 
   @Test

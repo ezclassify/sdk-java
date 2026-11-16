@@ -17,14 +17,13 @@ class RestClientCredentialsTest {
     assertFalse(rendered.contains("caller-token"), rendered);
     assertFalse(rendered.contains("ctx-token"), rendered);
     assertEquals(
-        "RestClientCredentials[accessToken=set, contextToken=set, applicationCredential=none]",
-        rendered);
+        "RestClientCredentials[accessToken=set, contextToken=set, applicationId=none]", rendered);
   }
 
   @Test
   void toStringDistinguishesAbsentTokens() {
     assertEquals(
-        "RestClientCredentials[accessToken=none, contextToken=none, applicationCredential=none]",
+        "RestClientCredentials[accessToken=none, contextToken=none, applicationId=none]",
         RestClientCredentials.none().toString());
   }
 

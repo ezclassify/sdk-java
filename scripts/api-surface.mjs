@@ -19,8 +19,8 @@ import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-// Published thin-client modules only.
-const MODULES = ['types', 'client'];
+// The one published module.
+const MODULES = ['client'];
 const GOLDEN = 'api-surface.txt';
 const JAVAP = process.env.JAVAP || 'javap';
 

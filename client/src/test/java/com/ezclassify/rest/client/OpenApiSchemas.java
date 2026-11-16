@@ -168,6 +168,13 @@ final class OpenApiSchemas {
         if (parameters != null && parameters.isJsonArray()) {
           for (JsonElement parameter : parameters.getAsJsonArray()) {
             JsonObject declared = parameter.getAsJsonObject();
+            if (declared.has("$ref")) {
+              String name = declared.get("$ref").getAsString();
+              declared =
+                  root.getAsJsonObject("components")
+                      .getAsJsonObject("parameters")
+                      .getAsJsonObject(name.substring(name.lastIndexOf('/') + 1));
+            }
             if ("query".equals(declared.get("in").getAsString())) {
               query.add(declared.get("name").getAsString());
             }

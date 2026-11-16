@@ -52,7 +52,7 @@ class UnknownResponseEnumConformanceTest {
 
   private static final String CTX = "/v1/ctx/acme-ctx/1.0.0";
   private static final String RESOLUTION =
-      "{\"contextId\":\"acme-ctx\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[],\"sources\":[]}";
+      "{\"contextId\":\"acme-ctx\",\"resolvedVersion\":\"1.0.0\",\"artifacts\":[]}";
 
   private static final String NOTHING_EMITTED =
       "{\"emitted\":[],\"omitted\":[],\"collapsed\":[],\"conflicts\":[],\"unrepresentable\":[]}";
@@ -60,11 +60,7 @@ class UnknownResponseEnumConformanceTest {
   private static ClientStubServer stub;
 
   private static String envelope(String resolution, String result) {
-    return "{\"resolution\":"
-        + resolution
-        + ",\"operationLimitations\":[],\"result\":"
-        + result
-        + "}";
+    return "{\"resolution\":" + resolution + ",\"result\":" + result + "}";
   }
 
   @BeforeAll
@@ -91,7 +87,7 @@ class UnknownResponseEnumConformanceTest {
                 + ","
                 + "\"assertions\":[{\"conceptId\":\"L_H\",\"categoryId\":\"level\","
                 + "\"confidence\":\"probable\",\"source\":\"parse\"}],"
-                + "\"errors\":[{\"constraintId\":\"c1\",\"message\":\"m\",\"severity\":\"fatal\"}],"
+                + "\"errors\":[{\"constraintId\":\"c1\",\"message\":\"m\"}],"
                 + "\"warnings\":[{\"kind\":\"advisory\",\"message\":\"w\"}]}"));
     routes.put(
         CTX + "/scheme/aggregate",
@@ -109,15 +105,13 @@ class UnknownResponseEnumConformanceTest {
         CTX + "/scheme/scan",
         envelope(
             RESOLUTION,
-            "{\"results\":[],\"limits\":{\"status\":\"paused\",\"limitHit\":\"memory\","
+            "{\"results\":[],\"unread\":[],\"limits\":{\"status\":\"paused\",\"limitHit\":\"memory\","
                 + "\"regionsFound\":0}}"));
     routes.put(
         CTX + "/crosswalk/translate",
         envelope(
             "{\"contextId\":\"acme-ctx\",\"resolvedVersion\":\"1.0.0\","
-                + "\"artifacts\":[{\"kind\":\"policy\",\"id\":\"p\",\"version\":\"1.0.0\"}],"
-                + "\"sources\":[{\"providerId\":\"idp\",\"reproducibility\":\"pinned\","
-                + "\"snapshotId\":\"snap-1\",\"attribution\":{\"name\":\"IdP\",\"license\":\"internal\"}}]}",
+                + "\"artifacts\":[{\"kind\":\"policy\",\"id\":\"p\",\"version\":\"1.0.0\"}]}",
             "{\"crosswalk\":{\"kind\":\"crosswalk\",\"id\":\"x\",\"version\":\"1.0.0\"},"
                 + "\"sourceScheme\":{\"kind\":\"scheme\",\"id\":\"a\",\"version\":\"1.0.0\"},"
                 + "\"targetScheme\":{\"kind\":\"scheme\",\"id\":\"b\",\"version\":\"1.0.0\"},"
@@ -173,7 +167,6 @@ class UnknownResponseEnumConformanceTest {
     ProcessResult result = processed.result();
     assertUnknown("probable", result.assertions().get(0).confidence());
     assertEquals("L_H", result.assertions().get(0).conceptId());
-    assertUnknown("fatal", result.errors().get(0).severity());
     assertUnknown("advisory", result.warnings().get(0).kind());
   }
 
@@ -204,8 +197,6 @@ class UnknownResponseEnumConformanceTest {
 
     ContextResolution resolution = translated.resolution();
     assertUnknown("policy", resolution.artifacts().get(0).kind());
-    assertUnknown("pinned", resolution.sources().get(0).reproducibility());
-    assertEquals("snap-1", resolution.sources().get(0).snapshotId());
     assertSame(
         CrosswalkOutcome.Disposition.CARRY, translated.result().outcomes().get(0).disposition());
     assertUnknown("escalate", translated.result().outcomes().get(1).disposition());
@@ -284,13 +275,10 @@ class UnknownResponseEnumConformanceTest {
 
   @Test
   void aProcessedAssertionTravelsBackToAccessCheckUnchanged() throws IOException {
-    // Every field the server sent goes back, byte for byte: dropping expiresAt would strip an
-    // expiry from a data assertion on access check. The fixture is in record component order.
+    // Every field the server sent goes back, byte for byte: dropping a field would change the
+    // data assertion on access check. The fixture is in record component order.
     String assertion =
         "{\"categoryId\":\"level\",\"conceptId\":\"L_H\",\"confidence\":\"certain\","
-            + "\"expiresAt\":\"2030-01-01T00:00:00Z\",\"metadata\":{\"k\":\"v\",\"n\":3},"
-            + "\"provenance\":{\"reproducibility\":\"reproducible\",\"snapshotId\":\"snap-1\","
-            + "\"providerId\":\"idp\",\"attribution\":{\"name\":\"IdP\",\"license\":\"internal\"}},"
             + "\"replacedConceptId\":\"L_OLD\",\"source\":\"parse\",\"sourceRule\":\"r1\","
             + "\"value\":\"v1\"}";
     Map<String, String> routes = new HashMap<>();
@@ -306,7 +294,9 @@ class UnknownResponseEnumConformanceTest {
                 + ",\"assertions\":["
                 + assertion
                 + "],\"errors\":[],\"warnings\":[]}"));
-    routes.put(CTX + "/access/check", envelope(RESOLUTION, "{\"granted\":true,\"rules\":[]}"));
+    routes.put(
+        CTX + "/access/check",
+        envelope(RESOLUTION, "{\"granted\":true,\"rules\":[],\"warnings\":[]}"));
     try (ClientStubServer local = new ClientStubServer(routes, "1.0.0")) {
       EzClassifyContext ctx = EzClassifyClient.connect(local.url(), "acme-ctx", "1.0.0");
       List<Assertion> data = ctx.scheme().process("H").result().assertions();

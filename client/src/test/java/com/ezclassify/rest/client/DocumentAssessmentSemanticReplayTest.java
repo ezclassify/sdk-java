@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ezclassify.rest.contract.ContextAccessRequirementsResult;
-import com.ezclassify.rest.contract.ContextDocumentAccessAssessmentResult;
 import com.ezclassify.rest.contract.ContextDocumentAuditResult;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -69,17 +68,25 @@ class DocumentAssessmentSemanticReplayTest {
   }
 
   /**
-   * The corpus is the count. Every contract case is numbered in order from 1 and has exactly one
-   * request and one recording, and nothing in either file lacks a case, so a dropped or added case
-   * shows up here without a pinned total to move.
+   * The corpus is the count. Every contract case has exactly one request and one recording, and
+   * nothing in either file lacks a case, so a dropped or added case shows up here without a pinned
+   * total to move. Case numbers are stable identities: a retired case leaves a gap, the numbers
+   * still ascend, and each request id is the number's own.
    */
   private static void assertCorpusIsComplete(
       JsonArray cases, JsonObject requests, JsonObject recordings) {
     assertTrue(!cases.isEmpty(), "the semantic contract declares no cases");
     List<String> requestIds = new ArrayList<>();
+    int previous = 0;
     for (int i = 0; i < cases.size(); i++) {
       JsonObject testCase = cases.get(i).getAsJsonObject();
-      assertEquals(i + 1, testCase.get("number").getAsInt(), "semantic case numbering has a gap");
+      int number = testCase.get("number").getAsInt();
+      assertTrue(number > previous, "semantic case numbers must ascend");
+      assertEquals(
+          String.format("case-%02d", number),
+          string(testCase, "requestId"),
+          "a semantic request id names its case number");
+      previous = number;
       requestIds.add(string(testCase, "requestId"));
     }
     List<String> sortedIds = new ArrayList<>(requestIds);
@@ -288,7 +295,6 @@ class DocumentAssessmentSemanticReplayTest {
   private static String route(String operation) {
     return switch (operation) {
       case "auditDocument", "cliDocument" -> "document/audit";
-      case "assessDocumentAccess" -> "document/assess-access";
       case "documentAccessRequirements" -> "access/describe-requirements";
       default -> throw new AssertionError("unsupported semantic operation: " + operation);
     };
@@ -299,8 +305,6 @@ class DocumentAssessmentSemanticReplayTest {
         switch (operation) {
           case "auditDocument", "cliDocument" ->
               WireJson.fromTree(output, ContextDocumentAuditResult.class);
-          case "assessDocumentAccess" ->
-              WireJson.fromTree(output, ContextDocumentAccessAssessmentResult.class);
           case "documentAccessRequirements" ->
               WireJson.fromTree(output, ContextAccessRequirementsResult.class);
           default -> throw new AssertionError("unsupported semantic operation: " + operation);
@@ -347,7 +351,7 @@ class DocumentAssessmentSemanticReplayTest {
     JsonObject expected =
         Json.parseObject(
             "{\"resolution\":{\"contextId\":\"ref-scheme-1\",\"resolvedVersion\":\"1.0.0\","
-                + "\"artifacts\":[],\"sources\":[]},\"operationLimitations\":[],"
+                + "\"artifacts\":[]},"
                 + "\"result\":{\"markingRequirements\":{\"whole\":true,\"part\":true},"
                 + "\"whole\":null,\"wholes\":[],\"wholeValidation\":null,\"parts\":[],"
                 + "\"wholeCoversParts\":null,\"unmarkedSpans\":[],"
@@ -369,17 +373,9 @@ class DocumentAssessmentSemanticReplayTest {
   }
 
   private static void roundTripPublicEnvelope(JsonObject testCase, JsonElement output) {
-    String operation = string(testCase, "operation");
-    if ("assessDocumentAccess".equals(operation)) {
-      ContextDocumentAccessAssessmentResult dto =
-          WireJson.fromTree(output, ContextDocumentAccessAssessmentResult.class);
-      assertNotNull(dto.resolution());
-      assertNotNull(WireJson.toTree(dto));
-    } else {
-      ContextDocumentAuditResult dto = WireJson.fromTree(output, ContextDocumentAuditResult.class);
-      assertNotNull(dto.resolution());
-      assertNotNull(WireJson.toTree(dto));
-    }
+    ContextDocumentAuditResult dto = WireJson.fromTree(output, ContextDocumentAuditResult.class);
+    assertNotNull(dto.resolution());
+    assertNotNull(WireJson.toTree(dto));
   }
 
   private static void assertAssertion(JsonElement root, JsonObject assertion, String requestId) {

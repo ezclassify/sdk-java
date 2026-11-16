@@ -1,4 +1,4 @@
-.PHONY: regen test test-verbose build clean distclean conformance-server api-surface check-api-surface check-architecture check-workflows check-notices notices
+.PHONY: regen test test-verbose build clean distclean conformance-server api-surface check-api-surface check-architecture check-workflows check-notices check-dependency-age notices
 
 # Generation consumes the frozen, provenance-stamped spec bundle. `npm ci`
 # installs only the pinned YAML parser. There is deliberately no local
@@ -6,7 +6,7 @@
 # ezclassify-spec-bot identity, and .github/workflows/vendor-readonly.yml
 # rejects any vendor/ commit that is not.
 SCHEMAS_DIR := vendor/spec/json-schemas
-OUT_DIR     := types/target/generated-sources/java/com/ezclassify/rest/contract
+OUT_DIR     := client/target/generated-sources/java/com/ezclassify/rest/contract
 GEN_PKG     := com.ezclassify.rest.contract
 # Use the reviewed wrapper by default so developer and CI Maven versions match.
 # An installed, compatible Maven remains selectable with make MVN=mvn.
@@ -16,11 +16,11 @@ MVN         ?= ./mvnw
 # Aggregate both shipped modules, including the generator-owned wire records.
 # The forked compile registers generated source roots before the root report.
 docs:
-	$(MVN) --batch-mode --no-transfer-progress -pl types,client -am javadoc:aggregate
+	$(MVN) --batch-mode --no-transfer-progress -pl client -am javadoc:aggregate
 
 regen:
 	npm --prefix tools ci --no-audit --no-fund
-	node types/scripts/gen.mjs "$(SCHEMAS_DIR)" "$(OUT_DIR)" "$(GEN_PKG)" vendor/spec/openapi.yaml
+	node client/scripts/gen.mjs "$(SCHEMAS_DIR)" "$(OUT_DIR)" "$(GEN_PKG)" vendor/spec/openapi.yaml
 	@echo "Regenerated $(OUT_DIR)"
 
 build:
@@ -57,7 +57,7 @@ check-api-surface:
 	node scripts/api-surface.mjs --check
 
 check-architecture:
-	$(MVN) --batch-mode --no-transfer-progress -pl types,client generate-sources
+	$(MVN) --batch-mode --no-transfer-progress -pl client generate-sources
 	node scripts/check-architecture.mjs
 
 check-workflows:
@@ -68,6 +68,13 @@ check-workflows:
 #   they run standalone; CI runs them alongside the workflow-guard tests.
 check-notices:
 	node --test scripts/gen-notices.test.mjs
+
+# check-dependency-age: refuse third-party artifacts published inside the seven-day
+#   window. Needs the closure report from the license-maven-plugin (see
+#   check-notices); its own tests run standalone with a local stand-in registry.
+check-dependency-age:
+	node --test scripts/check-dependency-age.test.mjs
+	node scripts/check-dependency-age.mjs
 
 # notices: refresh the generated closure section of THIRD-PARTY-NOTICES.md
 #   from the current production dependency set. CI runs the same pair in

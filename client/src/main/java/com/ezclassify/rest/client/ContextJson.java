@@ -2,7 +2,6 @@ package com.ezclassify.rest.client;
 
 import com.ezclassify.rest.contract.AggregateResult;
 import com.ezclassify.rest.contract.Assertion;
-import com.ezclassify.rest.contract.AssessmentLimitation;
 import com.ezclassify.rest.contract.Change;
 import com.ezclassify.rest.contract.CollectedNotice;
 import com.ezclassify.rest.contract.ContextOperationResult;
@@ -33,7 +32,7 @@ final class ContextJson {
 
   /**
    * The canonical constructor of a Context envelope record. Every Context operation returns its own
-   * nominal envelope type with the same four components, so the projection from {@link
+   * nominal envelope type with the same three components, so the projection from {@link
    * ContextOperationResult} is one shape applied many times rather than one method per operation.
    *
    * @param <T> the operation-specific result type
@@ -46,15 +45,10 @@ final class ContextJson {
      *
      * @param resolution the resolved Context composition
      * @param result the operation result
-     * @param operationLimitations limitations the server reported for this operation
      * @param responseProjection the projection the server applied, or {@code null}
      * @return the operation's envelope record
      */
-    R create(
-        ContextResolution resolution,
-        T result,
-        List<AssessmentLimitation> operationLimitations,
-        DocumentResponseProjection responseProjection);
+    R create(ContextResolution resolution, T result, DocumentResponseProjection responseProjection);
   }
 
   /**
@@ -67,11 +61,7 @@ final class ContextJson {
    * @return the operation's envelope record
    */
   static <T, R> R project(ContextOperationResult<T> value, Envelope<T, R> envelope) {
-    return envelope.create(
-        value.resolution(),
-        value.result(),
-        value.operationLimitations(),
-        value.responseProjection());
+    return envelope.create(value.resolution(), value.result(), value.responseProjection());
   }
 
   /** Parse a JSON array of strings into an insertion-ordered list; empty when absent. */

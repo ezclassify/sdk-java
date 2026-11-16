@@ -2,7 +2,6 @@ package com.ezclassify.rest.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -49,8 +48,7 @@ class CachePlanRunnerTest {
   private static final HttpClient HTTP = EzClassifyContext.newHttpClient();
 
   /** Capabilities the plan schema lets a port declare absent. */
-  private static final Set<String> NOT_APPLICABLE =
-      Set.of("cancellation", "explicitNullMember", "sharedRouteOperations");
+  private static final Set<String> NOT_APPLICABLE = Set.of("cancellation", "explicitNullMember");
 
   private static final JsonObject PLANS = load("plans.json");
 
@@ -96,15 +94,14 @@ class CachePlanRunnerTest {
   void everyPlanIsRunOrDeclaredNotApplicable() {
     long run = plans().stream().filter(CachePlanRunnerTest::runs).count();
     long skipped = plans().size() - run;
-    assertEquals(60, plans().size());
-    assertEquals(5, skipped, "cancellation x3, explicitNullMember x1, sharedRouteOperations x1");
+    assertEquals(47, plans().size());
+    assertEquals(4, skipped, "cancellation x3, explicitNullMember x1");
     assertEquals(
         Set.of(
             "cancel-one-caller",
             "cancel-before-and-after",
             "cancel-last-caller",
-            "key-explicit-null",
-            "shared-route-separate-entries"),
+            "key-explicit-null"),
         Set.copyOf(
             plans().stream()
                 .filter(plan -> !runs(plan))
@@ -181,18 +178,10 @@ class CachePlanRunnerTest {
             case "token-defaulted" -> null;
             default -> throw new AssertionError("unknown binding " + binding);
           };
-      boolean decisions =
-          client.has("cacheAccessDecisions") && client.get("cacheAccessDecisions").getAsBoolean();
       String contextId = client.has("context") ? client.get("context").getAsString() : "ez-full";
       transport = new CacheReplayTransport(corpus, denialCase, version);
       try {
-        if (client.has("construction")) {
-          assertEquals("refused", client.get("construction").getAsString(), id);
-          assertThrows(IllegalArgumentException.class, () -> build(contextId, version, decisions));
-          assertEquals(0, plan.getAsJsonArray("steps").size(), id);
-          return;
-        }
-        build(contextId, version, decisions);
+        build(contextId, version);
         context.resolve();
         transport.resetCounts();
         for (JsonElement step : plan.getAsJsonArray("steps")) run(step.getAsJsonObject());
@@ -205,7 +194,7 @@ class CachePlanRunnerTest {
       }
     }
 
-    private void build(String contextId, String version, boolean decisions) {
+    private void build(String contextId, String version) {
       cache = new ResponseCache(clock);
       context =
           new EzClassifyContext(
@@ -214,7 +203,7 @@ class CachePlanRunnerTest {
               version,
               new RestClientCredentials(null, "conformance-context-carrier"),
               HTTP,
-              new ContextCacheOptions(decisions, false),
+              ContextCacheOptions.defaults(),
               cache,
               EzClassifyContext.REQUEST_TIMEOUT);
     }
@@ -388,7 +377,7 @@ class CachePlanRunnerTest {
               "1.0.0",
               new RestClientCredentials(null, "conformance-context-carrier"),
               HTTP,
-              new ContextCacheOptions(false, true));
+              new ContextCacheOptions(true));
       Object decoded =
           WireCaseDrivers.invoke(outcome.recorded(), fresh, outcome.variant(), outcome.member());
       assertEquals(WireJson.toTree(decoded), WireJson.toTree(outcome.result()), id + ": " + name);

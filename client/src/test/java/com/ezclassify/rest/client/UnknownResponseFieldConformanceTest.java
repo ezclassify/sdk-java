@@ -32,7 +32,7 @@ class UnknownResponseFieldConformanceTest {
    */
   private static final String ENVELOPE_WITH_UNKNOWN_FIELDS =
       "{\"resolution\":{\"contextId\":\"acme-ctx\",\"requestedVersion\":\"1.0.0\","
-          + "\"resolvedVersion\":\"9.9.9\",\"artifacts\":[],\"sources\":[],"
+          + "\"resolvedVersion\":\"9.9.9\",\"artifacts\":[],"
           + "\"resolutionPolicyAddedLater\":\"pinned\"},"
           + "\"result\":{\"valid\":true,\"rendered\":\"H\",\"inputWasValid\":true,"
           + "\"assertions\":[{\"conceptId\":\"L_H\",\"categoryId\":\"level\","
@@ -43,7 +43,7 @@ class UnknownResponseFieldConformanceTest {
           + "\"assessment\":{\"emitted\":[],\"omitted\":[],\"collapsed\":[],\"conflicts\":[],"
           + "\"unrepresentable\":[]},"
           + "\"resultFieldAddedLater\":\"ignored\"},"
-          + "\"operationLimitations\":[],\"envelopeFieldAddedLater\":[\"ignored\"]}";
+          + "\"envelopeFieldAddedLater\":[\"ignored\"]}";
 
   private static ClientStubServer stub;
 

@@ -10,6 +10,7 @@ import com.ezclassify.rest.contract.DocumentResponseProfile;
 import com.ezclassify.rest.contract.GuideDeterminationInput;
 import com.ezclassify.rest.contract.GuideFindingDecision;
 import com.ezclassify.rest.contract.GuideFindingDetermination;
+import com.ezclassify.rest.contract.GuideRuleSelection;
 import com.ezclassify.rest.contract.ProcessingContext;
 import com.ezclassify.rest.contract.ProcessingRole;
 import com.ezclassify.rest.contract.RenderPreservation;
@@ -46,10 +47,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  * not declare with a 400, so every request a call puts on the wire, body-carrying or not, may name
  * only the query parameters the contract declares for that operation.
  *
- * <p>The failure this catches is invisible to the rest of the suite. The contract renamed {@code
- * format} and {@code scope} to {@code outputFormat} and {@code surface} on the operations that read
- * a marking, and a body-substring test that asserts whatever name the client sends stays green
- * either way.
+ * <p>The failure this catches is invisible to the rest of the suite: a body-substring test asserts
+ * whatever name the client sends, so it stays green when that name is one the contract does not
+ * declare.
  */
 class RequestSchemaConformanceTest {
 
@@ -58,8 +58,7 @@ class RequestSchemaConformanceTest {
   private static final OpenApiSchemas SPEC = OpenApiSchemas.load();
 
   private static final Assertion LEVEL =
-      new Assertion(
-          "level", "HIGH", AssertionConfidence.CERTAIN, null, null, null, null, "parse", null, "H");
+      new Assertion("level", "HIGH", AssertionConfidence.CERTAIN, null, "parse", null, "H");
 
   private static final GuideDeterminationInput DETERMINATIONS =
       new GuideDeterminationInput(
@@ -240,17 +239,11 @@ class RequestSchemaConformanceTest {
                             .preservation(RenderPreservation.FULL)
                             .build())));
     c.put(
-        "scheme.normalize",
-        new Case("scheme/normalize", x -> x.scheme().normalize("h", "portion", "banner")));
-    c.put(
         "scheme.check-coverage",
         new Case(
             "scheme/check-coverage",
             x -> x.scheme().checkCoverage(List.of("L"), "H", "portion", "banner")));
     c.put("scheme.diff", new Case("scheme/diff", x -> x.scheme().diff("H", "L", "portion")));
-    c.put(
-        "scheme.filter-concepts",
-        new Case("scheme/filter-concepts", x -> x.scheme().filterConcepts("hi")));
     c.put("scheme.notices", new Case("scheme/notices", x -> x.scheme().notices(List.of(LEVEL))));
     c.put("scheme.view", new Case("scheme/view", x -> x.scheme().view()));
     c.put(
@@ -258,21 +251,11 @@ class RequestSchemaConformanceTest {
         new Case("scheme/apply-preset", x -> x.scheme().applyPreset("default-label", "banner")));
     c.put("guide.scan", new Case("guide/scan", x -> x.guide().scan("secret text", "g1")));
     c.put("guide.evaluate", new Case("guide/evaluate", x -> x.guide().evaluate("g1", "r1")));
-    c.put("guide.evaluateMany", new Case("guide/evaluate", x -> x.guide().evaluateMany("r1")));
     c.put(
-        "guide.filter-rules",
-        new Case("guide/filter-rules", x -> x.guide().filterRules("sec", "g1")));
-    c.put(
-        "guide.describe-rule",
-        new Case("guide/describe-rule", x -> x.guide().describeRule("r1", "g1")));
-    c.put("guide.view", new Case("guide/view", x -> x.guide().view("g1")));
-    c.put(
-        "access.check-json",
+        "guide.evaluateMany",
         new Case(
-            "access/check",
-            x ->
-                x.access()
-                    .check(List.of(LEVEL), "{\"clearance\":\"high\"}", "{\"orgs\":[\"org-1\"]}")));
+            "guide/evaluate", x -> x.guide().evaluateMany(new GuideRuleSelection("g1", "r1"))));
+    c.put("guide.view", new Case("guide/view", x -> x.guide().view("g1")));
     c.put(
         "access.check-map",
         new Case(
@@ -283,13 +266,6 @@ class RequestSchemaConformanceTest {
                         List.of(LEVEL),
                         Map.<String, Object>of("clearance", "high"),
                         Map.<String, Object>of("orgs", List.of("org-1")))));
-    c.put(
-        "access.check-by-marking-json",
-        new Case(
-            "access/check",
-            x ->
-                x.access()
-                    .checkByMarking("H", "{\"clearance\":\"high\"}", "{\"orgs\":[\"org-1\"]}")));
     c.put(
         "access.check-by-marking-map",
         new Case(
@@ -306,9 +282,6 @@ class RequestSchemaConformanceTest {
             "access/describe-requirements",
             x -> x.access().describeRequirements("H", List.of(LEVEL))));
     c.put(
-        "access.describe-rule",
-        new Case("access/describe-rule", x -> x.access().describeRule("rule-1")));
-    c.put(
         "crosswalk.translate-marking",
         new Case("crosswalk/translate", x -> x.crosswalk().translate("cw-1", "H")));
     c.put(
@@ -320,18 +293,6 @@ class RequestSchemaConformanceTest {
             "document/audit",
             x ->
                 x.document().audit("document text", DETERMINATIONS, DocumentResponseProfile.FULL)));
-    c.put(
-        "document.assess-access",
-        new Case(
-            "document/assess-access",
-            x ->
-                x.document()
-                    .assessAccess(
-                        "document text",
-                        Map.of("clearance", "high"),
-                        Map.of("project", "p1"),
-                        DETERMINATIONS,
-                        DocumentResponseProfile.FULL)));
     return c;
   }
 
@@ -465,41 +426,39 @@ class RequestSchemaConformanceTest {
         new GetCase(CTX_PREFIX + "scheme", url -> context(url).scheme().summary()));
     c.put(
         "scheme.summary-of-scheme",
-        new GetCase(CTX_PREFIX + "scheme", url -> context(url).scheme().summary("source/a")));
+        new GetCase(
+            CTX_PREFIX + "scheme", url -> context(url).schemes().get("source/a").summary()));
     c.put(
         "scheme.concepts",
         new GetCase(CTX_PREFIX + "scheme/concepts", url -> context(url).scheme().concepts()));
     c.put(
         "scheme.concepts-of-scheme",
         new GetCase(
-            CTX_PREFIX + "scheme/concepts", url -> context(url).scheme().concepts("source/a")));
+            CTX_PREFIX + "scheme/concepts",
+            url -> context(url).schemes().get("source/a").concepts()));
     c.put(
         "scheme.categories",
         new GetCase(CTX_PREFIX + "scheme/categories", url -> context(url).scheme().categories()));
     c.put(
         "scheme.categories-of-scheme",
         new GetCase(
-            CTX_PREFIX + "scheme/categories", url -> context(url).scheme().categories("source/a")));
+            CTX_PREFIX + "scheme/categories",
+            url -> context(url).schemes().get("source/a").categories()));
     c.put(
         "scheme.formats",
         new GetCase(CTX_PREFIX + "scheme/formats", url -> context(url).scheme().formats()));
     c.put(
         "scheme.formats-of-scheme",
         new GetCase(
-            CTX_PREFIX + "scheme/formats", url -> context(url).scheme().formats("source/a")));
-    c.put(
-        "scheme.grammar",
-        new GetCase(CTX_PREFIX + "scheme/grammar", url -> context(url).scheme().grammar()));
-    c.put(
-        "scheme.grammar-of-scheme",
-        new GetCase(
-            CTX_PREFIX + "scheme/grammar", url -> context(url).scheme().grammar("source/a")));
+            CTX_PREFIX + "scheme/formats",
+            url -> context(url).schemes().get("source/a").formats()));
     c.put(
         "scheme.scopes",
         new GetCase(CTX_PREFIX + "scheme/scopes", url -> context(url).scheme().scopes()));
     c.put(
         "scheme.scopes-of-scheme",
-        new GetCase(CTX_PREFIX + "scheme/scopes", url -> context(url).scheme().scopes("source/a")));
+        new GetCase(
+            CTX_PREFIX + "scheme/scopes", url -> context(url).schemes().get("source/a").scopes()));
     c.put(
         "scheme.label-presets",
         new GetCase(
@@ -517,6 +476,9 @@ class RequestSchemaConformanceTest {
     c.put(
         "access.rules",
         new GetCase(CTX_PREFIX + "access/rules", url -> context(url).access().rules()));
+    c.put(
+        "crosswalk.describe",
+        new GetCase(CTX_PREFIX + "crosswalk/describe", url -> context(url).describeCrosswalks()));
     return c;
   }
 
@@ -576,22 +538,25 @@ class RequestSchemaConformanceTest {
   @Test
   void declaredQueryParametersComeFromTheContract() {
     assertEquals(
-        Set.of(), SPEC.declaredQueryParameters("post", CTX_PREFIX + "scheme/apply-preset"));
+        Set.of("scheme"), SPEC.declaredQueryParameters("post", CTX_PREFIX + "scheme/apply-preset"));
     assertEquals(
-        Set.of(), SPEC.declaredQueryParameters("get", CTX_PREFIX + "scheme/label-presets"));
+        Set.of("scheme"), SPEC.declaredQueryParameters("get", CTX_PREFIX + "scheme/label-presets"));
     assertEquals(Set.of(), SPEC.declaredQueryParameters("get", "/v1/ctx"));
     assertTrue(
         SPEC.declaredQueryParameters("get", CTX_PREFIX + "scheme/describe-concept")
             .containsAll(Set.of("conceptId", "categoryId", "view")));
     for (String path :
         List.of(
-            "scheme",
-            "scheme/concepts",
-            "scheme/categories",
-            "scheme/formats",
-            "scheme/grammar",
-            "scheme/scopes")) {
+            "scheme", "scheme/concepts", "scheme/categories", "scheme/formats", "scheme/scopes")) {
       assertEquals(Set.of("scheme"), SPEC.declaredQueryParameters("get", CTX_PREFIX + path), path);
+    }
+    // Every scheme operation takes the selector and nothing else in its query.
+    for (Case c : CASES.values()) {
+      if (!c.route().startsWith("scheme/")) continue;
+      assertEquals(
+          Set.of("scheme"),
+          SPEC.declaredQueryParameters("post", CTX_PREFIX + c.route()),
+          c.route());
     }
   }
 
@@ -657,7 +622,7 @@ class RequestSchemaConformanceTest {
   }
 
   @Test
-  void validatorAcceptsTheRenamedFields() {
+  void validatorAcceptsACurrentBody() {
     List<String> errors =
         SPEC.validateRequest(
             "post",

@@ -60,7 +60,7 @@ class ConformanceTest {
    * golden: when the vendored bundle is regenerated, update it deliberately in the same commit.
    * Without it, a missing recording or unreadable fixture silently shrinks the suite.
    */
-  private static final int EXPECTED_CASE_COUNT = 123;
+  private static final int EXPECTED_CASE_COUNT = 126;
 
   private static Replayer replayer;
   private static List<TestCase> testCases;
@@ -107,6 +107,7 @@ class ConformanceTest {
         String ctxVersion = (String) tc.getOrDefault("ctxVersion", "");
         if (ctxVersion == null) ctxVersion = "";
         String guideFixtureRaw = (String) tc.get("guideFixture");
+        String accessFixtureRaw = (String) tc.get("accessFixture");
         Object expect = tc.get("expect");
 
         // Plan-declared skips: from-layers mode and multi-fixture cases are out of this
@@ -136,9 +137,13 @@ class ConformanceTest {
           guideId = guideIdFrom(guideData, guideFixtureName);
         }
 
-        // Compute recording key:
-        // sha256(method|stableJson(args)|stableJson(fixture)|mode|ctxId|ctxVersion)
-        String recKey = computeRecordingKey(method, args, fixtureRaw, mode, ctxId, ctxVersion);
+        // Compute recording key: sha256(method|stableJson(args)|stableJson(fixture)|mode|ctxId|
+        // ctxVersion|guideFixture|accessFixture)
+        String guideFixture = guideFixtureRaw != null ? guideFixtureRaw : "";
+        String accessFixture = accessFixtureRaw != null ? accessFixtureRaw : "";
+        String recKey =
+            computeRecordingKey(
+                method, args, fixtureRaw, mode, ctxId, ctxVersion, guideFixture, accessFixture);
         byte[] recResponse = allRecordings.get(recKey);
         if (recResponse == null) {
           droppedCases.add(name + " (no recording for key " + recKey + ")");
@@ -146,7 +151,8 @@ class ConformanceTest {
         }
 
         // Build canonical HTTP path and body for this plan case.
-        String[] pathAndBody = buildPlanBody(method, args, schemeId, guideId, guideData);
+        String contextId = conformanceContextId(schemeId, guideFixture, accessFixture);
+        String[] pathAndBody = buildPlanBody(method, args, contextId, guideId, guideData);
         if (pathAndBody == null) continue; // method not routed by this runner (plan-declared)
 
         String apiPath = pathAndBody[0];
@@ -301,24 +307,41 @@ class ConformanceTest {
   // ── Hash computation ─────────────────────────────────────────────────────────────────────
 
   /**
-   * Compute the recording key using the canonical hash algorithm: {@code
-   * sha256(method+"|"+stableJson(args)+"|"+stableJson(fixture)+"|"+mode+"|"+ctxId+"|"+ctxVersion)}.
+   * Compute the recording key using the canonical hash algorithm: the SHA-256 of the method, {@code
+   * stableJson(args)}, {@code stableJson(fixture)}, mode, ctxId, ctxVersion, guide fixture and
+   * access fixture, joined with {@code |}.
    */
   private static String computeRecordingKey(
-      String method, Object args, Object fixture, String mode, String ctxId, String ctxVersion) {
+      String method,
+      Object args,
+      Object fixture,
+      String mode,
+      String ctxId,
+      String ctxVersion,
+      String guideFixture,
+      String accessFixture) {
     String raw =
-        method
-            + "|"
-            + Replayer.stableJson(args)
-            + "|"
-            + Replayer.stableJson(fixture)
-            + "|"
-            + mode
-            + "|"
-            + ctxId
-            + "|"
-            + ctxVersion;
+        String.join(
+            "|",
+            method,
+            Replayer.stableJson(args),
+            Replayer.stableJson(fixture),
+            mode,
+            ctxId,
+            ctxVersion,
+            guideFixture,
+            accessFixture);
     return Replayer.sha256(raw);
+  }
+
+  /**
+   * A test-only Context id for one composition: the scheme, plus the guide and access fixtures the
+   * case names. Two cases that send one body to two compositions reach two recordings.
+   */
+  private static String conformanceContextId(
+      String schemeId, String guideFixture, String accessFixture) {
+    String policies = Replayer.sha256(guideFixture + "|" + accessFixture).substring(0, 16);
+    return "conformance-" + segment(schemeId) + "-" + policies;
   }
 
   // ── Request body construction ────────────────────────────────────────────────────────────
@@ -330,7 +353,7 @@ class ConformanceTest {
   private static String[] buildPlanBody(
       String method,
       List<Object> args,
-      String schemeId,
+      String contextId,
       String guideId,
       Map<String, Object> guideData) {
 
@@ -339,7 +362,7 @@ class ConformanceTest {
 
     Map<String, Object> body = new LinkedHashMap<>();
     String path;
-    String ctxBase = "/v1/ctx/conformance-" + segment(schemeId) + "/1.0.0";
+    String ctxBase = "/v1/ctx/" + contextId + "/1.0.0";
 
     switch (method) {
       case "registryProcessAll":
@@ -410,15 +433,18 @@ class ConformanceTest {
         body.put("assertions", args.size() > 0 ? args.get(0) : Collections.emptyList());
         body.put("userAttributes", args.size() > 1 ? args.get(1) : Collections.emptyMap());
         break;
-      // Guide methods. evaluateMany over the plan's single-guide fixtures is
-      // equivalent to a single-guide evaluate, so it folds onto the ctx
-      // guide/evaluate route (the same fold the client runner uses).
+      // Guide methods. evaluateGuide names the plan's guide; evaluateMany sends
+      // the plan's selections, each already naming its guide.
       case "evaluateGuide":
-      case "evaluateMany":
         if (guideId == null || guideData == null) return null;
         path = ctxBase + "/guide/evaluate";
         body.put("guideId", guideId);
         body.put("selectedRuleIds", arr0);
+        break;
+      case "evaluateMany":
+        if (guideId == null || guideData == null) return null;
+        path = ctxBase + "/guide/evaluate";
+        body.put("selections", arr0);
         break;
       case "guideScan":
         if (guideId == null || guideData == null) return null;

@@ -2,6 +2,8 @@ package com.ezclassify.rest.client;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.ezclassify.rest.contract.CrosswalkOutcome;
+import com.ezclassify.rest.contract.CrosswalkTranslationResult;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -39,19 +41,37 @@ class WireCorpusTest {
   void exactLiteralCoverage() throws Exception {
     var corpus = corpus();
     corpus.requireIds(WireCaseDrivers.DRIVERS.keySet());
-    assertEquals(119, corpus.cases.size());
+    assertEquals(109, corpus.cases.size());
     assertEquals(
-        82,
+        83,
         WireCaseDrivers.DRIVERS.values().stream()
             .filter(v -> v == WireCaseDrivers.Boundary.PUBLIC)
             .count());
-    assertEquals(37, WireCaseDrivers.PRIVATE_REASONS.size());
+    assertEquals(26, WireCaseDrivers.PRIVATE_REASONS.size());
     assertEquals(
         WireCaseDrivers.PRIVATE_REASONS.keySet(),
         WireCaseDrivers.DRIVERS.entrySet().stream()
             .filter(e -> e.getValue() == WireCaseDrivers.Boundary.PRIVATE)
             .map(java.util.Map.Entry::getKey)
             .collect(java.util.stream.Collectors.toSet()));
+  }
+
+  @Test
+  void aCandidateThatLostASelectionIsNotSelectedNeverOmit() throws Exception {
+    var recorded = corpus().cases.get("ctx-crosswalk-translate.not-selected");
+    var result =
+        WireJson.fromTree(
+            recorded.responseBody().getAsJsonObject().get("result"),
+            CrosswalkTranslationResult.class);
+    var losing =
+        result.outcomes().stream()
+            .filter(o -> CrosswalkOutcome.Disposition.NOT_SELECTED.equals(o.disposition()))
+            .toList();
+    assertEquals(List.of("handling:open-export"), losing.stream().map(o -> o.mappingId()).toList());
+    assertEquals(List.of(), losing.get(0).targets());
+    assertTrue(
+        result.outcomes().stream()
+            .noneMatch(o -> CrosswalkOutcome.Disposition.OMIT.equals(o.disposition())));
   }
 
   @TestFactory
@@ -124,7 +144,7 @@ class WireCorpusTest {
                   pieces[4],
                   WireCaseDrivers.credentials(c),
                   observed,
-                  new ContextCacheOptions(false, true));
+                  new ContextCacheOptions(true));
           value = auditDefault ? context.document().audit("") : WireCaseDrivers.invoke(c, context);
         } else {
           try (var client = new EzClassifyClient(base, WireCaseDrivers.credentials(c))) {
@@ -178,8 +198,16 @@ class WireCorpusTest {
           // A bare resource has no envelope and no Java projection, so the typed answer must carry
           // everything the server sent: a dropped member fails here, not only an invented one.
           assertEquals(c.responseBody(), WireJson.toTree(value), c.id());
+        } else if (c.target().endsWith("/access/rules") && value instanceof String marking) {
+          assertEquals(c.responseBody().getAsJsonObject().get("marking").getAsString(), marking);
         } else if (c.target().endsWith("/access/rules")) {
           subset(c.responseBody().getAsJsonObject().get("rules"), WireJson.toTree(value), c.id());
+        } else if (c.target().endsWith("/crosswalk/describe")) {
+          // Typed like the description: every member must survive, including the document's whole.
+          assertEquals(
+              withoutEmptyMembers(c.responseBody().getAsJsonObject().get("crosswalks")),
+              withoutEmptyMembers(WireJson.toTree(value)),
+              c.id());
         } else {
           assertNotNull(value, c.id());
           subset(c.responseBody(), WireJson.toTree(value), c.id());
@@ -218,7 +246,7 @@ class WireCorpusTest {
 
   private static final java.util.regex.Pattern SCHEME_RESOURCE =
       java.util.regex.Pattern.compile(
-          "^/v1/ctx/[^/]+/[^/]+/scheme(/(concepts|categories|formats|grammar|scopes|label-presets))?$");
+          "^/v1/ctx/[^/]+/[^/]+/scheme(/(concepts|categories|formats|scopes|label-presets))?$");
 
   /** Whether a path is one of the scheme resource reads, which answer without an envelope. */
   private static boolean isSchemeResource(String target) {
