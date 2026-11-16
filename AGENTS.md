@@ -20,9 +20,6 @@ direction, and the required boundary gates.
 - [`examples/sdk-tour/`](examples/sdk-tour/): runnable example exercising the HTTP client
   (`ClientDemo`). Lives inside the reactor so client changes that break the
   demo fail naturally in `make test`.
-- [`build-support/repo-policy/`](build-support/repo-policy/): test sources only, asserting repository policy
-  rather than published behavior. Nothing here is published, and no published
-  module carries a dependency for its sake.
 
 Build verbs (top-level Makefile):
 

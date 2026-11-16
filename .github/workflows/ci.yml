@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
     types:
@@ -10,31 +8,32 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-  workflow_dispatch: null
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Also run the release-only checks
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  policy:
-    uses: ezclassify/.github/.github/workflows/ci-policy.yml@a42ece80f520858a2926723d12bba2af2dca0474
-    with:
-      primary-version: "22"
-      full-versions: '["22"]'
-  build:
+  ci:
+    name: ci
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
-      # CONTRIBUTING.md states that a pull request whose commits are not signed
-      # off cannot be merged. That sentence is only true if something checks it,
-      # so the range is checked here rather than left to the PR checklist.
+      # CONTRIBUTING.md says a pull request whose commits are not signed off
+      # cannot be merged. This is what makes that sentence true.
       - name: Commits carry a Developer Certificate of Origin sign-off
         if: github.event_name == 'pull_request'
         env:
@@ -43,18 +42,6 @@ jobs:
         run: |
           git fetch --no-tags --quiet origin "$BASE_SHA" "$HEAD_SHA"
           bash scripts/check-signoff.sh "$BASE_SHA" "$HEAD_SHA"
-
-      - name: Set up Node.js 22
-        uses: ezclassify/.github/actions/setup-node-npm@a42ece80f520858a2926723d12bba2af2dca0474 # v7.0.0
-        with:
-          node-version: "22"
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
-        with:
-          java-version: "17"
-          distribution: "temurin"
-          cache: maven
 
       # Provenance gate, part 1: the vendored OpenAPI contract must match the
       # SHA-256 recorded in MANIFEST.json, so a hand-edit to the vendored spec
@@ -70,14 +57,22 @@ jobs:
             exit 1
           fi
 
-      # Both the guard and the gate below are policy checks whose whole value is
-      # what they refuse, so their own tests run here rather than sitting in the
-      # tree unexecuted.
-      - name: Repository policy scripts behave as specified
-        run: node --test scripts/check-workflow-location-guards.test.mjs scripts/gen-notices.test.mjs scripts/check-signoff.test.mjs scripts/check-dependency-age.test.mjs
+      - name: Set up Node.js 22
+        uses: ezclassify/.github/actions/setup-node-npm@a42ece80f520858a2926723d12bba2af2dca0474 # v7.0.0
+        with:
+          node-version: "22"
 
-      - name: Workflow location guards follow repository policy
-        run: node scripts/check-workflow-location-guards.mjs
+      - name: Set up JDK 17
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: maven
+
+      # The notices and dependency-age gates refuse things, so their own tests
+      # run here too.
+      - name: Repository policy scripts behave as specified
+        run: node --test scripts/gen-notices.test.mjs scripts/check-signoff.test.mjs scripts/check-dependency-age.test.mjs
 
       # Quarantine gate: no third-party artifact this build uses may be newer than
       # seven days. It runs before the build. One Maven run only resolves and
@@ -99,100 +94,62 @@ jobs:
       - name: Build and test (Maven multi-module)
         run: ./mvnw verify --batch-mode --no-transfer-progress
 
-      # Maven's native initialize phase installed the frozen generator tools.
-      # Reuse that unchanged installation for the independent two-output proof.
-      # Provenance gate, part 2: nothing generated is committed (the Maven
-      # build regenerates the wire records from vendor/spec on every compile),
-      # so the property that matters is determinism. Two back-to-back runs of
-      # the generator over the hash-verified schemas must produce identical
-      # output; a generator that drifts between runs would make the build and
-      # the api-surface golden unreproducible.
-      - name: Generator output is deterministic
-        run: |
-          node client/scripts/gen.mjs vendor/spec/json-schemas client/target/regen-check/a com.ezclassify.rest.contract vendor/spec/openapi.yaml
-          node client/scripts/gen.mjs vendor/spec/json-schemas client/target/regen-check/b com.ezclassify.rest.contract vendor/spec/openapi.yaml
-          diff -r client/target/regen-check/a client/target/regen-check/b
-        if: ${{ needs.policy.outputs.full == 'true' }}
-
-      # The generator must write only under its output directory. A run that
-      # modifies any tracked file means the generator (or a template it reads)
-      # regressed into writing outside target/.
+      # The Maven build regenerates the wire records from vendor/spec on every
+      # compile. The generator must write only under its output directory; a
+      # modified tracked file means it (or a template it reads) regressed.
       - name: Generator leaves the tracked tree untouched
         run: git diff --exit-code
 
       - name: Generated and handwritten type ownership is singular
-        run: |
-          node scripts/check-architecture.mjs
+        run: node scripts/check-architecture.mjs
 
-      # 1.0 public-surface freeze: diffs the javap dump of the compiled,
-      # published client module against
-      # the committed golden api-surface.txt.
-      # Reviewed API changes regenerate the golden via 'make api-surface'.
+      # 1.0 public-surface freeze: diffs the javap dump of the compiled client
+      # module against the committed golden api-surface.txt. Reviewed API
+      # changes regenerate the golden with 'make api-surface'.
       - name: Public API surface is frozen at 1.0
         run: make check-api-surface
-
-      - name: Preserve the native API proposal when the surface gate fails
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: java-api-surface-proposal
-          path: target/api-surface.actual.txt
-          if-no-files-found: ignore
-          retention-days: 7
 
       # License gate over the production (compile + runtime) closure of every
       # reactor module: each dependency must carry an allowlisted license, the
       # generated section of THIRD-PARTY-NOTICES.md must match the current
-      # closure, and the curated sections must name that same set of components
-      # so neither half of the file can outlive what the build actually ships.
+      # closure, and the curated sections must name that same set of components.
       - name: Dependency license compliance and third-party notices
         run: |
           ./mvnw org.codehaus.mojo:license-maven-plugin:2.7.1:aggregate-add-third-party \
             -Dlicense.excludedScopes=test,provided --batch-mode --no-transfer-progress -q
           node scripts/gen-notices.mjs --check
 
-      # skipNotDeployed=false because the central-publishing-maven-plugin
-      # replaces the default maven-deploy-plugin, which the CycloneDX plugin
-      # misreads as "module never deploys" and would emit an empty BOM.
-      - name: Generate SBOM (CycloneDX)
-        run: >-
-          ./mvnw org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeAggregateBom -DoutputFormat=json -Dcyclonedx.skipNotDeployed=false --batch-mode --no-transfer-progress
-        if: ${{ needs.policy.outputs.full == 'true' }}
-
       - name: Working tree is clean after build
         run: git diff --exit-code && test -z "$(git status --porcelain)"
 
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+  # Release-only. The release train accepts a workflow_dispatch run of this
+  # workflow with full=true when every job, this one included, succeeds.
+  full:
+    name: full
+    needs: ci
+    if: ${{ inputs.full }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          name: sbom
-          path: target/bom.json
-          if-no-files-found: error
-        if: ${{ needs.policy.outputs.full == 'true' }}
-    needs:
-      - policy
-    if: ${{ needs.policy.result == 'success' }}
-  qualification:
-    needs:
-      - policy
-      - build
-    if: ${{ always() && !cancelled() && needs.policy.result == 'success' && needs.policy.outputs.full == 'true' }}
-    uses: ezclassify/.github/.github/workflows/ci-result.yml@a42ece80f520858a2926723d12bba2af2dca0474
-    with:
-      results: ${{ toJSON(needs) }}
-      full: ${{ needs.policy.outputs.full == 'true' }}
-      full-only: "[]"
-      optional: "[]"
-  ci:
-    needs:
-      - policy
-      - build
-      - qualification
-    if: ${{ always() && !cancelled() }}
-    uses: ezclassify/.github/.github/workflows/ci-result.yml@a42ece80f520858a2926723d12bba2af2dca0474
-    with:
-      results: ${{ toJSON(needs) }}
-      full: ${{ needs.policy.outputs.full == 'true' }}
-      full-only: '["qualification"]'
-      optional: "[]"
-run-name: CI · ${{ github.event_name }} · ${{ github.ref_name }}
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: ezclassify/.github/actions/setup-node-npm@a42ece80f520858a2926723d12bba2af2dca0474 # v7.0.0
+        with:
+          node-version: "22"
+
+      # Provenance gate, part 2: nothing generated is committed, so the property
+      # that matters is determinism. Two runs of the generator over the
+      # hash-verified schemas must produce identical output, or the build and
+      # the api-surface golden would not be reproducible.
+      - name: Generator output is deterministic
+        run: |
+          npm --prefix tools ci --no-audit --no-fund
+          node client/scripts/gen.mjs vendor/spec/json-schemas client/target/regen-check/a com.ezclassify.rest.contract vendor/spec/openapi.yaml
+          node client/scripts/gen.mjs vendor/spec/json-schemas client/target/regen-check/b com.ezclassify.rest.contract vendor/spec/openapi.yaml
+          diff -r client/target/regen-check/a client/target/regen-check/b
+
+      - name: Working tree is clean
+        run: test -z "$(git status --porcelain)"

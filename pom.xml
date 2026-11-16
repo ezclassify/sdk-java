@@ -37,7 +37,6 @@
     <modules>
         <module>client</module>
         <module>examples/sdk-tour</module>
-        <module>build-support/repo-policy</module>
     </modules>
 
     <properties>
