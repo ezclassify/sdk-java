@@ -58,7 +58,7 @@ jobs:
           fi
 
       - name: Set up Node.js 22
-        uses: ezclassify/.github/actions/setup-node-npm@a42ece80f520858a2926723d12bba2af2dca0474 # v7.0.0
+        uses: ezclassify/.github/actions/setup-node-npm@da1e243029be7e724f808cca11e385e6d79eee8b # v7.0.0
         with:
           node-version: "22"
 
@@ -137,7 +137,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node.js 22
-        uses: ezclassify/.github/actions/setup-node-npm@a42ece80f520858a2926723d12bba2af2dca0474 # v7.0.0
+        uses: ezclassify/.github/actions/setup-node-npm@da1e243029be7e724f808cca11e385e6d79eee8b # v7.0.0
         with:
           node-version: "22"
 
