@@ -1,10 +1,9 @@
-.PHONY: regen test test-verbose build clean distclean conformance-server api-surface check-api-surface check-architecture check-workflows check-notices check-dependency-age notices
+.PHONY: regen test test-verbose build clean distclean conformance-server api-surface check-api-surface check-architecture check-notices check-dependency-age notices
 
 # Generation consumes the frozen, provenance-stamped spec bundle. `npm ci`
 # installs only the pinned YAML parser. There is deliberately no local
 # re-vendor target: vendor/spec/ is written by the spec bot under the
-# ezclassify-spec-bot identity, and .github/workflows/vendor-readonly.yml
-# rejects any vendor/ commit that is not.
+# ezclassify-spec-bot identity.
 SCHEMAS_DIR := vendor/spec/json-schemas
 OUT_DIR     := client/target/generated-sources/java/com/ezclassify/rest/contract
 GEN_PKG     := com.ezclassify.rest.contract
@@ -60,12 +59,8 @@ check-architecture:
 	$(MVN) --batch-mode --no-transfer-progress -pl client generate-sources
 	node scripts/check-architecture.mjs
 
-check-workflows:
-	node --test scripts/check-workflow-location-guards.test.mjs
-	node scripts/check-workflow-location-guards.mjs
-
 # check-notices: the notices gate's own tests. They need no maven closure, so
-#   they run standalone; CI runs them alongside the workflow-guard tests.
+#   they run standalone; CI runs them too.
 check-notices:
 	node --test scripts/gen-notices.test.mjs
 

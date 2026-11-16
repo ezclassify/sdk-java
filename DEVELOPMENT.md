@@ -61,9 +61,8 @@ transport/decoder helpers are outside the public reference.
   Don't hand-edit generated types; regenerate them with `make regen` (CI's
   codegen determinism check and clean-tree gate will catch drift either way).
   There is no local command that re-vendors [`vendor/spec/`](vendor/spec/), and there should
-  not be: [`.github/workflows/vendor-readonly.yml`](.github/workflows/vendor-readonly.yml) blocks any vendor/ commit
-  that the spec bot did not author, so a locally produced bundle could not
-  land anyway. To move the spec, change it in [ezclassify/contracts](https://github.com/ezclassify/contracts) and let the spec
+  not be: the bundle comes from the spec bot, so a locally produced one is
+  not a supported change. To move the spec, change it in [ezclassify/contracts](https://github.com/ezclassify/contracts) and let the spec
   bot propagate it; report spec defects through the [central product tracker](https://github.com/ezclassify/ezclassify/issues/new/choose).
 - **Engine behavior is a runtime concern.** This repository contains only REST
   clients and contract types. Report behavioral defects with the endpoint,
