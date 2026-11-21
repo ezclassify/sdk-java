@@ -3414,12 +3414,13 @@ public final class com.ezclassify.rest.contract.SuggestResult extends java.lang.
 }
 public final class com.ezclassify.rest.contract.Suggestion extends java.lang.Record {
   public boolean selected();
-  public com.ezclassify.rest.contract.Suggestion(java.lang.String, java.lang.String, java.lang.String, java.lang.Boolean, java.lang.String, java.lang.String, java.lang.String, int, java.util.List<java.lang.String>, java.util.List<java.lang.String>, boolean, java.lang.String, java.util.Map<java.lang.String, java.lang.String>);
+  public com.ezclassify.rest.contract.Suggestion(java.lang.String, java.lang.String, java.lang.Integer, java.lang.String, java.lang.Boolean, java.lang.String, java.lang.String, java.lang.String, int, java.util.List<java.lang.String>, java.util.List<java.lang.String>, boolean, java.lang.String, java.util.Map<java.lang.String, java.lang.String>);
   public final boolean equals(java.lang.Object);
   public final int hashCode();
   public final java.lang.String toString();
   public int order();
   public java.lang.Boolean gated();
+  public java.lang.Integer depth();
   public java.lang.String categoryId();
   public java.lang.String conceptId();
   public java.lang.String description();
@@ -3432,6 +3433,7 @@ public final class com.ezclassify.rest.contract.Suggestion extends java.lang.Rec
   public java.util.Map<java.lang.String, java.lang.String> views();
   public static final java.lang.String JSON_FIELD_CATEGORY_ID = "categoryId";
   public static final java.lang.String JSON_FIELD_CONCEPT_ID = "conceptId";
+  public static final java.lang.String JSON_FIELD_DEPTH = "depth";
   public static final java.lang.String JSON_FIELD_DESCRIPTION = "description";
   public static final java.lang.String JSON_FIELD_GATED = "gated";
   public static final java.lang.String JSON_FIELD_GROUP = "group";
