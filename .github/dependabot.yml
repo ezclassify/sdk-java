@@ -7,8 +7,9 @@ updates:
   - package-ecosystem: maven
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: cron
+      cronjob: '17 3 * * *'
+      timezone: America/New_York
     cooldown:
       # Matches the seven-day window `scripts/check-dependency-age.mjs` enforces,
       # so Dependabot does not open a bump the gate would refuse.
@@ -26,13 +27,14 @@ updates:
         update-types:
           - version-update:semver-minor
           - version-update:semver-patch
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 1
 
   - package-ecosystem: npm
     directory: /tools
     schedule:
-      interval: weekly
-      day: monday
+      interval: cron
+      cronjob: '17 3 * * *'
+      timezone: America/New_York
     cooldown:
       # Matches the seven-day window `scripts/check-dependency-age.mjs` enforces,
       # so Dependabot does not open a bump the gate would refuse.
@@ -47,14 +49,15 @@ updates:
         update-types:
           - version-update:semver-minor
           - version-update:semver-patch
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 1
     versioning-strategy: increase-if-necessary
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: cron
+      cronjob: '17 3 * * *'
+      timezone: America/New_York
     cooldown:
       # Matches the seven-day window `scripts/check-dependency-age.mjs` enforces,
       # so Dependabot does not open a bump the gate would refuse.
@@ -69,4 +72,4 @@ updates:
         update-types:
           - version-update:semver-minor
           - version-update:semver-patch
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 1
