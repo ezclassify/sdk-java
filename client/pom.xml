@@ -11,8 +11,9 @@
     <artifactId>ezclassify-rest-client</artifactId>
     <packaging>jar</packaging>
 
-    <name>EzClassify REST Client for Java</name>
-    <description>Context-bound client and typed wire contract for the EzClassify REST API (Java 17+ HttpClient)</description>
+    <name>EzClassify REST Client for Java (marking parser, validator and access checks)</name>
+    <url>https://ezclassify.com/docs/sdk-clients</url>
+    <description>Java client for the EzClassify REST API: a marking parser, validator, rollup and need-to-know access checks for security markings and sensitivity labels. CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.</description>
 
     <properties>
         <automatic.module.name>com.ezclassify.rest.client</automatic.module.name>

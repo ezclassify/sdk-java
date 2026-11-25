@@ -5,7 +5,7 @@
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Java 17+](https://img.shields.io/badge/java-17%2B-orange.svg)](pom.xml)
 
-This repository is the Java client for the EzClassify REST API. It contains wire types and the HTTP client. It does not contain the EzClassify engine or enterprise scheme content.
+This is the Java client for the EzClassify REST API. Use it to parse and validate security markings and sensitivity labels, roll portion marks up into an overall marking, and check need-to-know access, from any Java 17+ application. Markings follow a scheme: IC Classification and Control Markings (CAPCO), Controlled Unclassified Information (CUI), Traffic Light Protocol (TLP) 2.0, Common Vulnerability Scoring System (CVSS), or rules you write yourself. The client needs a running EzClassify runtime; it does not contain the engine or any scheme content. The free developer runtime includes TLP 2.0, CVSS and demo subsets of CAPCO and CUI. The full CAPCO and CUI schemes are licensed content.
 
 The [ezclassify/contracts](https://github.com/ezclassify/contracts) repository owns
 document and wire types; EzClassify Runtime owns
@@ -55,6 +55,52 @@ INTERNAL valid=true
 ```
 
 `cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
+
+### Validate, roll up and check access
+
+The `capco-demo` Context on the developer runtime is a demo subset of CAPCO. It validates a marking, rolls several markings up into one overall marking, and checks access for a user. The guides and access rules in it are notional demo content.
+
+```java
+import com.ezclassify.rest.client.EzClassifyClient;
+import com.ezclassify.rest.client.EzClassifyContext;
+import java.util.List;
+import java.util.Map;
+
+public class CapcoDemo {
+    public static void main(String[] args) {
+        try (EzClassifyClient client = new EzClassifyClient("http://localhost:3000")) {
+            EzClassifyContext context = client.context("capco-demo", "1.0.0");
+
+            var read = context.scheme().validate("SECRET//NOFORN").result();
+            System.out.println(read.rendered() + " valid=" + read.valid());
+
+            var overall = context.scheme().aggregate(List.of(
+                    "SECRET//REL TO USA, GBR, CAN",
+                    "CONFIDENTIAL//REL TO USA, GBR",
+                    "UNCLASSIFIED")).result();
+            System.out.println(overall.rendered());
+
+            var decision = context.access().checkByMarking(
+                    "SECRET//NOFORN",
+                    Map.of("clearance", "SECRET", "nationality", "GBR")).result();
+            System.out.println("granted=" + decision.granted());
+            for (var rule : decision.rules()) {
+                if (!rule.skipped()) System.out.println("  " + rule.name() + ": " + rule.granted());
+            }
+        }
+    }
+}
+```
+
+```text
+SECRET//NOFORN valid=true
+SECRET//REL TO USA, GBR
+granted=false
+  Clearance level: true
+  NOFORN: USA nationality claim required (demo): false
+```
+
+A SECRET-cleared user with a GBR nationality claim is denied a NOFORN document.
 
 ### Swap to your runtime
 
