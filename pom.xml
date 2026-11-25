@@ -7,7 +7,7 @@
     <packaging>pom</packaging>
 
     <name>EzClassify REST Client Library for Java (parent)</name>
-    <description>Java client library for the EzClassify REST API: a marking parser, validator, rollup and need-to-know access checks for security markings and sensitivity labels. CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.</description>
+    <description>Java client library for the EzClassify REST API: a classification marking parser, validator, rollup and need-to-know access checks for security markings and sensitivity labels. CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.</description>
     <url>https://ezclassify.com/</url>
 
     <licenses>
