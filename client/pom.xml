@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
 
     <name>EzClassify REST Client for Java (marking parser, validator and access checks)</name>
-    <url>https://ezclassify.com/docs/sdk-clients</url>
+    <url>https://ezclassify.com/</url>
     <description>Java client for the EzClassify REST API: a marking parser, validator, rollup and need-to-know access checks for security markings and sensitivity labels. CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.</description>
 
     <properties>

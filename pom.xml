@@ -8,7 +8,7 @@
 
     <name>EzClassify REST SDK for Java (parent)</name>
     <description>Java client for the EzClassify REST API: a marking parser, validator, rollup and need-to-know access checks for security markings and sensitivity labels. CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.</description>
-    <url>https://ezclassify.com/docs/sdk-clients</url>
+    <url>https://ezclassify.com/</url>
 
     <licenses>
         <license>
