@@ -27,6 +27,22 @@ import java.util.logging.Logger;
  *   System.out.println(context.scheme().process("LEVEL-A").result().rendered());
  * }
  * }</pre>
+ *
+ * <p>Validating, rolling up and checking access against the {@code capco-demo} Context of the free
+ * developer runtime, a demo subset of IC Classification and Control Markings (CAPCO):
+ *
+ * <pre>{@code
+ * try (EzClassifyClient client = new EzClassifyClient("http://localhost:3000")) {
+ *   EzClassifyContext context = client.context("capco-demo", "1.0.0");
+ *   context.scheme().validate("SECRET//NOFORN").result().valid();           // true
+ *   context.scheme().aggregate(List.of(
+ *       "SECRET//REL TO USA, GBR, CAN",
+ *       "CONFIDENTIAL//REL TO USA, GBR",
+ *       "UNCLASSIFIED")).result().rendered();                               // SECRET//REL TO USA, GBR
+ *   context.access().checkByMarking("SECRET//NOFORN",
+ *       Map.of("clearance", "SECRET", "nationality", "GBR")).result().granted(); // false
+ * }
+ * }</pre>
  */
 public final class EzClassifyClient implements AutoCloseable {
   private static final Logger LOG = Logger.getLogger(EzClassifyClient.class.getName());
